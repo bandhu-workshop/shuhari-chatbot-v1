@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 13:18 IST
+> **Last updated:** 2026-11-26 13:31 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -83,7 +83,7 @@ Never manage another owner's tables.
 
 | Rev | What it does | Milestone | Status |
 | --- | --- | --- | --- |
-| — | `alembic init` + `env.py` filter, `script.py.mako` imports sqlmodel | Bootstrap 4 | **next** |
+| — | `alembic init -t async` + `env.py` filter, `script.py.mako` imports sqlmodel | Bootstrap 4 | **next** |
 | 0001 | `CREATE EXTENSION IF NOT EXISTS vector` | Bootstrap 4 | todo |
 | 0002 | `feedback` table (first SQLModel table in `models/`, registered in `db/base.py`) | Milestone 3 | todo |
 | — | ADK session/event/state tables | Milestone 3 | todo — created by ADK, not Alembic |
@@ -157,6 +157,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | B4 | `db/base.py` + `db/session.py` | Milestone 1 | todo |
 | B5 | `tests/unit/test_package_structure.py` enforcing the layout | Bootstrap 4 | todo |
 | B6 | `services/` layer added when session CRUD needs a home | Milestone 3 | todo |
+| B7 | Check ADK issues [#4366](https://github.com/google/adk-python/issues/4366) and [#7276](https://github.com/google/adk-python/issues/7276) (asyncpg + Postgres bugs) before wiring sessions | Milestone 3 | todo |
 
 ### Frontend
 
@@ -180,7 +181,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | Q2 | mem0 `history_db_path`: keep SQLite or move to Postgres? | 2026-11-26 | Milestone 5 |
 | Q3 | Should `localdev/features/` be tracked in git instead of ignored? | 2026-11-26 | No — reversible with `git mv` |
 | Q4 | Add SPDX headers + `CITATION.cff` like creditforge and shuhari-cli? | 2026-11-26 | No |
-| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md`, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | No — but every structural change currently has to be made twice |
+| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md`, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | No — but it has already caused stale text twice (PR #6 and the ADR-0002 PR). Each structural change must be made in two places |
 
 ---
 
@@ -192,5 +193,6 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Public repo under `bandhu-workshop`, MIT, no AI authorship in commits | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Ruleset (not classic protection); required CI checks added incrementally | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Squash-only merges, not rebase — every commit on `main` is a CI-verified state | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
+| 2026-11-26 | One async database URL; mem0 gets discrete params; `psycopg` dropped | [decisions/0002-one-database-url.md](decisions/0002-one-database-url.md) |
 | 2026-11-26 | oxlint, not ESLint, for frontend linting | [../frontend/AGENTS.md](../frontend/AGENTS.md) |
 | 2026-11-26 | Backend layered as `core`/`api`/`db`/`models`/`schemas`/`ai`, adapted from creditforge; evals split code-vs-data; routes versioned `/api/v1` | [../backend/AGENTS.md](../backend/AGENTS.md) → Layout |

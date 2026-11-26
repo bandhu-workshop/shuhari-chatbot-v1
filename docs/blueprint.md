@@ -138,8 +138,10 @@ straight into `db/`). Structure adapted from
   Run's startup probe never depends on an API version.
 - No `services/` layer until milestone 3, when session list/rename/delete needs a home
   that is neither a route nor agent code.
-- **Async runtime, sync Alembic.** Unlike creditforge this cannot be async-only: ADK
-  needs asyncpg, Alembic a sync psycopg path, mem0's pgvector a plain URL. Deliberate.
+- **Async-only, one database URL.** App code, Alembic and ADK share one
+  `postgresql+asyncpg://` string; mem0 alone takes discrete connection parameters because
+  it is not SQLAlchemy. `asyncpg` is the only driver we declare. See
+  [ADR 0002](./decisions/0002-one-database-url.md).
 
 ---
 
@@ -629,22 +631,25 @@ Notes that don't fit in a one-liner:
   never depends on an API version.
 - **No `services/` layer yet.** It arrives at milestone 3, when session list/rename/delete
   needs a home that is neither a route nor agent code. Don't create it empty before then.
-- **Async runtime, sync Alembic.** Unlike `bandhu-workshop/creditforge`, this project
-  cannot be async-only: ADK needs asyncpg, Alembic needs a sync psycopg path, and mem0's
-  pgvector needs a plain URL. Three URLs from one source in `core/config.py`. This is
-  deliberate — don't "fix" it into a single async path.
+- **Async-only, one URL.** App code, Alembic and ADK all use the same
+  `postgresql+asyncpg://` string; mem0 alone takes discrete connection parameters because
+  it does not use SQLAlchemy. See [ADR 0002](../docs/decisions/0002-one-database-url.md).
+  Don't reintroduce a sync driver.
 - `tests/unit/test_package_structure.py` imports every layer package, so this layout is
   enforced rather than aspirational.
 
 ## Configuration
-- `config.py` is the only place that knows model ids, providers, keys and URLs. Agents, tools and memory read from `settings`; never hardcode a model name.
+- `core/config.py` is the only place that knows model ids, providers, keys and URLs. Agents, tools and memory read from `settings`; never hardcode a model name.
 - Models use the LiteLLM format `provider/model` (`CHAT_MODEL`, `MEMORY_LLM_MODEL`, `EVAL_JUDGE_MODEL`). Default for all three: `openai/gpt-6-luna`, OpenAI's cheapest model. Don't change the defaults to a costlier model.
 - ADK agents always get their model as `LiteLlm(model=settings.chat_model)`, so switching provider is a `.env` change, not a code change.
-- DB URLs are built from `POSTGRES_*` vars (one source):
-  - `app_db_url` → `postgresql+psycopg://…` (SQLModel, Alembic; sync)
-  - `adk_db_url` → `postgresql+asyncpg://…` (ADK `DatabaseSessionService` needs an async driver)
-  - `mem0_db_url` → `postgresql://…` (mem0 pgvector)
-- Dependencies: `google-adk[db]`, `litellm`, `asyncpg`, `psycopg[binary]`, `sqlmodel`, `alembic`, `mem0ai`. Pin `google-adk` and `mem0ai` to a minor version and upgrade on purpose (ADK has changed its session schema between versions).
+- **One database URL, async-only** (see [ADR 0002](../docs/decisions/0002-one-database-url.md)).
+  `POSTGRES_*` vars are the single source; `core/config.py` derives exactly one URL:
+  - `database_url` → `postgresql+asyncpg://…` — our app code, **Alembic**, and ADK. One string, three consumers.
+  - An explicit `DATABASE_URL` env var wins when set. That is the only DB override production needs.
+  - mem0 gets `postgres_host`, `postgres_port`, `postgres_user`, `postgres_password`, `postgres_db` as **discrete parameters** — no URL, no string parsing. Never build a URL and then take it apart.
+- `asyncpg` is the only Postgres driver we declare. Don't add `psycopg`; ADK requires async, so a second driver buys nothing. mem0's libpq binding is its own transitive dependency.
+- Alembic uses the **async template** (`alembic init -t async`). The `asyncio.run` / `run_sync` boilerplate in `env.py` is generated — leave it alone.
+- Dependencies: `google-adk[db]`, `litellm`, `asyncpg`, `sqlmodel`, `alembic`, `mem0ai`. Pin `google-adk` and `mem0ai` to a minor version and upgrade on purpose (ADK has changed its session schema between versions).
 
 ## Database ownership
 One Postgres, three owners. Never manage another owner's tables.
@@ -655,7 +660,7 @@ One Postgres, three owners. Never manage another owner's tables.
 | ADK sessions | ADK's session / event / state tables | ADK itself. On ADK upgrades read the release notes; use `adk migrate session` when ADK says the schema changed |
 | mem0 | the `mem0_memories` vector collection | mem0 itself |
 
-- `alembic/env.py`: `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.app_db_url`, and this filter so autogenerate never tries to drop ADK or mem0 tables:
+- `alembic/env.py`: `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.database_url`, and this filter so autogenerate never tries to drop ADK or mem0 tables:
   ```python
   def include_object(obj, name, type_, reflected, compare_to):
       # Only manage tables defined in our SQLModel metadata.
@@ -683,7 +688,12 @@ MEM0_CONFIG = {
     },
     "vector_store": {
         "provider": "pgvector",
-        "config": {"connection_string": settings.mem0_db_url, "collection_name": "mem0_memories",
+        # Discrete params, not connection_string: better documented and version-stable.
+        # For Cloud SQL, postgres_host is the socket dir (/cloudsql/<instance>) — libpq
+        # treats a host starting with "/" as a Unix socket directory.
+        "config": {"host": settings.postgres_host, "port": settings.postgres_port,
+                   "user": settings.postgres_user, "password": settings.postgres_password,
+                   "dbname": settings.postgres_db, "collection_name": "mem0_memories",
                    "embedding_model_dims": settings.embed_dims},  # must equal the embedder's output size
     },
     "history_db_path": settings.mem0_history_path,
@@ -1014,10 +1024,10 @@ EMBED_DIMS=768
 OLLAMA_URL=http://localhost:11434
 MEM0_HISTORY_PATH=../localdev/data/mem0/history.db
 
-# --- Postgres (config.py builds every DB URL from these) ---
-# app tables (SQLModel/Alembic): postgresql+psycopg://...
-# ADK sessions (async driver):   postgresql+asyncpg://...
-# mem0 (pgvector):               postgresql://...
+# --- Postgres (core/config.py derives ONE url from these; see docs/decisions/0002) ---
+# database_url -> postgresql+asyncpg://...  used by our tables, Alembic AND ADK.
+# mem0 takes POSTGRES_* as discrete params instead of a url.
+# Set DATABASE_URL to override the derived url (e.g. a Cloud SQL unix socket).
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USER=shuhari
@@ -1519,11 +1529,11 @@ for d in . backend frontend; do echo "@AGENTS.md" > "$d/CLAUDE.md"; done
 
 ````bash
 cd backend
-uv add "google-adk[db]" litellm asyncpg "psycopg[binary]" sqlmodel alembic \
+uv add "google-adk[db]" litellm asyncpg sqlmodel alembic \
        fastapi "uvicorn[standard]" pydantic-settings httpx \
        mem0ai ollama arize-phoenix-otel openinference-instrumentation-google-adk
 uv add --dev ruff mypy pytest pytest-asyncio
-uv run alembic init alembic
+uv run alembic init -t async alembic
 cd ..
 
 cd frontend
@@ -1536,7 +1546,7 @@ Then edit by hand:
 | File | Change |
 | --- | --- |
 | `backend/pyproject.toml` | Pin `google-adk` and `mem0ai` with `~=` to the installed minor version. Add `[tool.pytest.ini_options]` with `testpaths = ["tests"]` and `markers = ["integration: needs Postgres"]` |
-| `backend/alembic/env.py` | `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.app_db_url`, add the `include_object` filter from `backend/AGENTS.md` |
+| `backend/alembic/env.py` | `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.database_url`, add the `include_object` filter from `backend/AGENTS.md` |
 | `backend/alembic/script.py.mako` | Add `import sqlmodel` |
 | `frontend/package.json` | Add script `"test": "vitest"` |
 | `frontend/vite.config.ts` | Add the Tailwind plugin and `server.proxy: { "/api": "http://localhost:8000" }` |
