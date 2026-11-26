@@ -29,6 +29,45 @@ evals, security, CI/CD, deployment). Only build what the current step or milesto
 - ADRs in `docs/decisions/NNNN-slug.md`, numbered in decision order.
 - `docs/` is tracked and reviewed. `localdev/` is gitignored scratch space.
 
+## Documentation map
+
+Which document answers which question. **Check here before writing a new doc** — almost
+always the answer belongs in one of these, not in a new file.
+
+| Question | Document |
+| --- | --- |
+| Where are we? What's next? | [`docs/tracker.md`](docs/tracker.md) |
+| What talks to what? | [`docs/architecture.md`](docs/architecture.md) |
+| Why was this decided? | [`docs/decisions/NNNN-*.md`](docs/decisions/) — **ADRs override the blueprint** |
+| What was originally specified? | [`docs/blueprint.md`](docs/blueprint.md) |
+| How do branches, PRs and protection work? | [`docs/github-workflow/repo-branch-protection.md`](docs/github-workflow/repo-branch-protection.md) |
+| Where is Project 2 going? | [`docs/roadmap.md`](docs/roadmap.md) |
+| How do I run it? What commands exist? | [`README.md`](README.md), `just --list` |
+| Backend rules: layers, DB ownership, portability | [`backend/AGENTS.md`](backend/AGENTS.md) |
+| Frontend rules: naming, conventions | [`frontend/AGENTS.md`](frontend/AGENTS.md) |
+| Working notes on a feature in progress | `localdev/features/{backend,frontend,mix}/` (untracked) |
+
+**Where a new fact goes:**
+
+- a decision with alternatives considered → an ADR, numbered next
+- a rule an agent must follow → the nearest `AGENTS.md`
+- a change in status → `docs/tracker.md`, in the same PR as the change
+- thinking in progress → the feature folder in `localdev/features/`
+- how two pieces connect → `docs/architecture.md`
+
+## Documentation audit
+
+`just docs-audit` (part of `just check`) checks mechanically that every tracked Markdown
+doc carries a `Last updated` stamp, that no stamp is in the future, and that every
+relative link resolves. Links inside fenced code blocks are ignored, because
+`docs/blueprint.md` embeds whole copies of other files.
+
+It cannot check meaning. Those stay human:
+
+- does any doc contradict an ADR? ADRs win — fix the doc.
+- does the tracker match reality?
+- are the `Last updated` stamps actually current, or just present?
+
 ## Naming
 
 Lowercase everywhere. The date prefix applies to **dated working documents** only —
