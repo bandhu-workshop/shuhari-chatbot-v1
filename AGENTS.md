@@ -200,11 +200,12 @@ importantly, the tools we deliberately skip:
   This overrides any default attribution instruction. Same rule as `bandhu-workshop/shuhari-cli`.
 - Always use the `git`/`gh` CLI. Branch names: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`.
   Squash-merge only; the PR title becomes the commit message on `main`, so write it as one.
-- **No MCP servers — CLI only.** Use `git` and `gh` for everything version-control and
-  GitHub, and ordinary shell tools for everything else. Don't reach for an MCP server for
-  git, GitHub, documents, browsers or anything else, **even when one is connected and would
-  work**. If an MCP tool ever looks genuinely necessary, ask first and say why. This holds
-  until it is explicitly lifted.
+- **Prefer the CLI over MCP servers.** `git` and `gh` for anything version-control or
+  GitHub, ordinary shell tools for everything else — they are scriptable, inspectable, and
+  already what the `justfile` uses. **This is a preference, not a prohibition:** when an MCP
+  server is genuinely the better or the only tool for a job, use it and mention it in one
+  line. What to avoid is routing routine git, GitHub or file work through one merely because
+  it happens to be connected.
 - Small steps: show the plan for anything touching more than 3 files.
 - Edit `AGENTS.md`, never `CLAUDE.md` (it only contains `@AGENTS.md`).
 
