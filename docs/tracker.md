@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 13:01 IST
+> **Last updated:** 2026-11-26 13:18 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -176,7 +176,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 
 | # | Question | Raised | Blocking |
 | --- | --- | --- | --- |
-| Q1 | oxlint (what Vite 9 scaffolded) or ESLint (what `frontend/AGENTS.md` says)? | 2026-11-26 | Bootstrap 4 — pick before adding frontend deps |
+| ~~Q1~~ | ~~oxlint or ESLint?~~ **Resolved: oxlint.** Already scaffolded and wired to `npm run lint`; no rule yet needs ESLint's ecosystem | 2026-11-26 | closed |
 | Q2 | mem0 `history_db_path`: keep SQLite or move to Postgres? | 2026-11-26 | Milestone 5 |
 | Q3 | Should `localdev/features/` be tracked in git instead of ignored? | 2026-11-26 | No — reversible with `git mv` |
 | Q4 | Add SPDX headers + `CITATION.cff` like creditforge and shuhari-cli? | 2026-11-26 | No |
@@ -192,4 +192,5 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Public repo under `bandhu-workshop`, MIT, no AI authorship in commits | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Ruleset (not classic protection); required CI checks added incrementally | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Squash-only merges, not rebase — every commit on `main` is a CI-verified state | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
+| 2026-11-26 | oxlint, not ESLint, for frontend linting | [../frontend/AGENTS.md](../frontend/AGENTS.md) |
 | 2026-11-26 | Backend layered as `core`/`api`/`db`/`models`/`schemas`/`ai`, adapted from creditforge; evals split code-vs-data; routes versioned `/api/v1` | [../backend/AGENTS.md](../backend/AGENTS.md) → Layout |

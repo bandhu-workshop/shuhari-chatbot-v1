@@ -1,6 +1,6 @@
 # frontend
 
-> **Last updated:** 2026-11-26 13:01 IST
+> **Last updated:** 2026-11-26 13:18 IST
 
 React + TypeScript, Vite, Tailwind. `node_modules` lives here. Talks only to the backend API on :8000, under `/api/v1`.
 
@@ -21,7 +21,9 @@ tests/e2e/         # Playwright, later
 ```
 
 ## Conventions
-- ESLint + Prettier + `tsc` clean (CI checks all three). `just fmt` formats.
+- oxlint + Prettier + `tsc` clean (CI checks all three). `just fmt` formats.
+  oxlint is what `create-vite` scaffolds now and what `npm run lint` runs; config is
+  `.oxlintrc.json`. Don't swap in ESLint without a concrete rule oxlint can't express.
 - Feature folders own their components, hooks and state; move to `components/ui/` only when 2+ features use it.
 - Streaming: render tokens as they arrive; tool calls as collapsible cards; Stop button.
 - Markdown + code highlighting for assistant messages.
