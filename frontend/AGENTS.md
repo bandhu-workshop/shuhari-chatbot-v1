@@ -1,6 +1,6 @@
 # frontend
 
-> **Last updated:** 2026-11-26 13:18 IST
+> **Last updated:** 2026-11-26 13:44 IST
 
 React + TypeScript, Vite, Tailwind. `node_modules` lives here. Talks only to the backend API on :8000, under `/api/v1`.
 
@@ -19,6 +19,28 @@ src/
   App.tsx
 tests/e2e/         # Playwright, later
 ```
+
+## Naming
+
+**kebab-case filenames, PascalCase component names.** The file is lowercase; the thing it
+exports is not.
+
+| Kind | File | Export |
+| --- | --- | --- |
+| Component | `message-list.tsx` | `MessageList` |
+| Hook | `use-chat.ts` | `useChat` |
+| Plain module | `api.ts`, `api-types.ts` | `camelCase` functions |
+| Types / interfaces | wherever they belong | `PascalCase` |
+| Folder | `features/chat/`, `components/ui/` | — |
+
+Why kebab-case and not PascalCase files: it avoids collisions on case-insensitive
+filesystems, and it keeps one naming rule across the whole repo instead of two. Community
+practice is split on this — `eslint-react`'s filename rule defaults to PascalCase and some
+style guides want the filename to match the default export — so this is a deliberate
+choice, not a universal standard. Don't flip it per-file.
+
+Repo-wide convention: [../AGENTS.md#naming](../AGENTS.md#naming). No date prefixes in
+frontend source; those are for dated working documents only.
 
 ## Conventions
 - oxlint + Prettier + `tsc` clean (CI checks all three). `just fmt` formats.
