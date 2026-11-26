@@ -1,0 +1,35 @@
+# Area labels, applied automatically from the paths a pull request touches, so they
+# cost nothing at review time. The three labels that are NOT here -- run:e2e,
+# needs:decision, blocked -- are deliberately manual, because each one *does*
+# something rather than describing the diff.
+#
+# `sync-labels: true` in the workflow means a label is removed again when the paths
+# stop matching, so these stay accurate across force-pushes.
+#
+# Scheme and reasoning: docs/github-workflow/repo-branch-protection.md#labels
+
+"area:backend":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/**"
+
+"area:frontend":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "frontend/**"
+
+"area:docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "*.md"
+          - "**/AGENTS.md"
+
+"area:ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "justfile"
+          - "compose.yaml"
+          - "scripts/**"
+          - ".mcp.json"

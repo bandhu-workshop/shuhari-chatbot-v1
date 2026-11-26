@@ -1,6 +1,6 @@
 # GitHub workflow and branch protection
 
-> **Last updated:** 2026-11-26 16:31 IST
+> **Last updated:** 2026-11-26 17:15 IST
 
 Solo-developer workflow for this repository. The repo lives at
 `bandhu-workshop/shuhari-chatbot-v1` (public). Same conventions as
@@ -137,6 +137,75 @@ required checks, strict.
 **Side effect worth knowing:** `just merge` (`gh pr merge --auto`) used to fail
 intermittently with exit 1, because `--auto` is rejected when there are no required checks
 to wait for. Now that there are, auto-merge works as intended.
+
+## Labels
+
+Sixteen labels, **nine applied automatically**. The only three ever clicked by hand are the
+three that *do* something.
+
+### Why this is smaller than a standard taxonomy
+
+A pull request here already carries its type and area in machine-readable form: the type in
+the Conventional Commit prefix (`feat:`, `fix:`, `chore:`), the area in the changed paths.
+And there are no issues — every label sits on a pull request. Hand-applying `type:feature`
+to a pull request titled `feat: …` is duplicate data entry, which is the one thing every
+label guide warns against: **don't label what another field already holds.**
+
+So a label earns its place here only by being **automatic** (no triage cost) or a **control**
+(it changes what happens).
+
+### Automatic — `actions/labeler` from changed paths
+
+| Label | Paths |
+| --- | --- |
+| `area:backend` | `backend/**` |
+| `area:frontend` | `frontend/**` |
+| `area:docs` | `docs/**`, `*.md`, `**/AGENTS.md` |
+| `area:ci` | `.github/**`, `justfile`, `compose.yaml`, `scripts/**`, `.mcp.json` |
+
+Config is `.github/labeler.yml`, run by the `label` job in `ci.yml` with `sync-labels: true`
+so a label is removed again when the paths stop matching. It only touches labels defined in
+that file, so the manual ones survive.
+
+Dependabot maintains its own five automatically — `dependencies`, `python:uv`, `javascript`,
+`docker`, `github_actions`. Left alone.
+
+### Manual — three controls
+
+| Label | Meaning |
+| --- | --- |
+| `run:e2e` | Run the Playwright end-to-end suite on this pull request. A **switch**, not a description — this is how end-to-end verification stays on demand rather than on every PR |
+| `needs:decision` | Waiting on a decision. Applied when a blocking question is raised, so unanswered pull requests are filterable |
+| `blocked` | Cannot merge pending something external |
+
+### Kept for when issues start
+
+`bug`, `enhancement`, `good first issue`, `help wanted`. The last two carry *platform*
+meaning — GitHub surfaces them in contributor discovery — so they stay even while unused.
+
+### Removed, and one renamed
+
+`duplicate`, `invalid`, `wontfix` and `question` are gone: GitHub's close reasons ("not
+planned") cover all four, and with no issues they were noise. `documentation` was
+**renamed** to `area:docs` rather than deleted and recreated, because GitHub renames in
+place and keeps existing assignments.
+
+### Colours
+
+The `area:*` labels share a blue family, so the eye reads the family before the word. The
+three controls deliberately are *not* a family: they use traffic-light semantics — purple
+for a switch, amber for waiting, red for stopped — because they signal state rather than
+category.
+
+### Deferred
+
+`type:*` waits until there is a release and a `.github/release.yml` to consume it: GitHub's
+auto-generated release notes group by **label**, not by commit prefix, which is the point at
+which type labels start paying for themselves. They should then be derived from the commit
+prefix, not applied by hand.
+
+`priority:*` is not used at all. With one developer and [`../tracker.md`](../tracker.md)
+already ordering the work, priority is expressed by what gets picked up next.
 
 ## Why squash-only, not rebase
 
