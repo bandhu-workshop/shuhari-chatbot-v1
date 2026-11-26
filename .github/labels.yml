@@ -1,0 +1,76 @@
+# The complete label set, in version control. This file IS the source of truth:
+# `.github/workflows/labels.yml` syncs GitHub to match it with delete-other-labels,
+# so a label created by hand in the web UI is removed on the next sync.
+#
+# Why this file exists: the labels were originally created with `gh label create`,
+# which left them existing only on GitHub. Nothing could review a change to them and
+# nothing could detect drift -- exactly the "you have to remember" shape of problem
+# this project tries to eliminate.
+#
+# Scheme and reasoning: docs/github-workflow/repo-branch-protection.md#labels
+# Which paths apply the area: labels: .github/labeler.yml
+
+# --- area: applied automatically from changed paths (blue family) ---
+- name: "area:backend"
+  color: "1d76db"
+  description: "backend/ — Python, FastAPI, ADK, DB"
+- name: "area:frontend"
+  color: "54aeff"
+  description: "frontend/ — React, Vite, UI"
+- name: "area:docs"
+  color: "0075ca"
+  description: "Docs, ADRs, AGENTS.md, the tracker"
+- name: "area:ci"
+  color: "033d8b"
+  description: "Workflows, justfile, compose, scripts"
+
+# --- controls: applied by hand, each one DOES something (traffic-light colours) ---
+- name: "run:e2e"
+  color: "8250df"
+  description: "Run the Playwright end-to-end suite on this PR"
+- name: "needs:decision"
+  color: "d4a72c"
+  description: "Blocked on a decision from the maintainer"
+- name: "blocked"
+  color: "b60205"
+  description: "Cannot merge pending something external"
+
+# --- Dependabot's own labels. Declared here so delete-other-labels does not remove
+#     them; Dependabot creates these on demand from the ecosystems in dependabot.yml.
+- name: "dependencies"
+  color: "0366d6"
+  description: "Pull requests that update a dependency file"
+- name: "python:uv"
+  color: "2b67c6"
+  description: "Dependabot: Python/uv dependency updates"
+- name: "javascript"
+  color: "168700"
+  description: "Dependabot: npm dependency updates"
+- name: "docker"
+  color: "21ceff"
+  description: "Dependabot: base image updates"
+- name: "github_actions"
+  color: "000000"
+  description: "Dependabot: action version updates"
+
+# --- kept for when issues start. `good first issue` and `help wanted` carry platform
+#     meaning: GitHub surfaces them in contributor discovery.
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or request"
+- name: "good first issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+- name: "help wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+# Deliberately absent, with reasons in the doc linked above:
+#   type:*      — deferred until the first release, when .github/release.yml can group
+#                 release notes by it. GitHub groups by label, not by commit prefix.
+#   priority:*  — one developer; docs/tracker.md already orders the work.
+#   status:*    — duplicates what a project board or the tracker holds.
+#   duplicate / invalid / wontfix / question — GitHub's close reasons cover these.

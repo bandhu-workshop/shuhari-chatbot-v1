@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 18:40 IST
+> **Last updated:** 2026-11-26 18:58 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -194,6 +194,8 @@ runs on every auth diff at no setup cost.
 | Step | What | When | Status |
 | --- | --- | --- | --- |
 | C1 | CI with backend / integration / frontend / docker + publish | Bootstrap 3 | **done** |
+| C11 | Labels declared in `.github/labels.yml` and synced by the `Labels` workflow with `delete-other-labels`, so the set is reviewable and cannot drift | 2026-11-26 | **done** — they previously existed only on GitHub, created imperatively with `gh label create` |
+| C12 | SemVer annotated tags + `.github/release.yml` for grouped release notes, and the `type:*` labels it consumes | Milestone 2 at the earliest | todo — no tags today, which is correct at milestone 0: a `v0.1.0` on a repo with no application code means nothing |
 | C10 | Split into one workflow per area — `backend.yml`, `frontend.yml`, `images.yml`, `pr.yml` — so a red check names its own half of the repo. Each job writes the local reproduce command to the run summary | 2026-11-26 | **done** — reverses ADR 0004's "one workflow" rule; see its Revision |
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
 | C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **done** | 
@@ -284,3 +286,4 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Stamp currency is enforced mechanically, not by a human checklist: a doc's content and its stamp must change together | [../scripts/docs_audit.py](../scripts/docs_audit.py) |
 | 2026-11-26 | With squash merges a commit trailer goes on one commit or in the PR body, never on every commit | [../AGENTS.md](../AGENTS.md#rules) |
 | 2026-11-26 | One workflow per area (Backend / Frontend / Images / PR / CodeQL), reversing the earlier one-workflow rule: the split costs nothing and names the thing that broke | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision: workflow split |
+| 2026-11-26 | Labels live in `.github/labels.yml` under version control, synced declaratively. `type:`/`priority:`/`status:`/`component:` stay out, each with a named trigger that would change that | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |

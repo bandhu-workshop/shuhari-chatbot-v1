@@ -1,6 +1,6 @@
 # GitHub workflow and branch protection
 
-> **Last updated:** 2026-11-26 17:15 IST
+> **Last updated:** 2026-11-26 18:58 IST
 
 Solo-developer workflow for this repository. The repo lives at
 `bandhu-workshop/shuhari-chatbot-v1` (public). Same conventions as
@@ -143,6 +143,13 @@ to wait for. Now that there are, auto-merge works as intended.
 Sixteen labels, **nine applied automatically**. The only three ever clicked by hand are the
 three that *do* something.
 
+**[`.github/labels.yml`](../../.github/labels.yml) is the source of truth.** The `Labels`
+workflow syncs GitHub to match it with `delete-other-labels`, so a label created by hand in
+the web UI vanishes on the next sync, and a change to the set arrives as a reviewable diff.
+The labels were originally created with `gh label create`, which left them existing only on
+GitHub — no review, no drift detection. That is the shape of problem this project exists to
+avoid, so it was fixed.
+
 ### Why this is smaller than a standard taxonomy
 
 A pull request here already carries its type and area in machine-readable form: the type in
@@ -197,15 +204,28 @@ three controls deliberately are *not* a family: they use traffic-light semantics
 for a switch, amber for waiting, red for stopped — because they signal state rather than
 category.
 
-### Deferred
+### Deferred, and what would change our mind
 
-`type:*` waits until there is a release and a `.github/release.yml` to consume it: GitHub's
-auto-generated release notes group by **label**, not by commit prefix, which is the point at
-which type labels start paying for themselves. They should then be derived from the commit
-prefix, not applied by hand.
+| Not used | Why | What would trigger it |
+| --- | --- | --- |
+| `type:*` | A pull request already carries its type in the Conventional Commit prefix | **The first release.** GitHub's auto-generated release notes group by *label*, not by commit prefix, so `.github/release.yml` is the moment these start paying for themselves — and they should then be *derived* from the prefix, not clicked |
+| `priority:*` | One developer, and [`../tracker.md`](../tracker.md) already orders the work. Priority is expressed by what gets picked up next | A second person, or a backlog that outgrows the tracker |
+| `status:*` | Duplicates what a board or the tracker holds. A label is a poor state machine | Adopting GitHub Projects — at which point its Status *field* does this, not labels |
+| `component:*` | Same idea as our `area:*`, just a longer prefix. Both are industry-normal (Kubernetes uses `area/`) | Nothing. Renaming would be churn for zero gain |
+| CODEOWNERS | No second reviewer to route to | A second contributor |
 
-`priority:*` is not used at all. With one developer and [`../tracker.md`](../tracker.md)
-already ordering the work, priority is expressed by what gets picked up next.
+### Releases and tags — not yet, and that is deliberate
+
+A Git tag marks a commit; a label categorises a pull request. They are unrelated, and this
+repo currently has **no tags and no releases**, which is correct at milestone 0 of 7: a
+`v0.1.0` on a repo whose application code does not exist yet would mean nothing.
+
+When it becomes real, the convention is Semantic Versioning on **annotated** tags
+(`git tag -a v0.1.0 -m "..."`), one per deliberate release rather than one per merge, plus
+`.github/release.yml` to group notes — which is also when `type:*` labels arrive. The
+natural first trigger is the end of a milestone that someone else could actually run, so
+realistically milestone 2 at the earliest. Tracked as a tracker row rather than left here as
+a good intention.
 
 ## Why squash-only, not rebase
 

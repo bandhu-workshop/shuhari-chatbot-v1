@@ -1,0 +1,29 @@
+# Keep GitHub's labels identical to .github/labels.yml.
+#
+# Runs only when that file changes, plus on demand. delete-other-labels means the file
+# is the complete source of truth: a label added by hand in the web UI disappears on the
+# next sync, which is the point -- drift becomes impossible rather than merely unlikely.
+name: Labels
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/labels.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: EndBug/label-sync@v2
+        with:
+          config-file: .github/labels.yml
+          delete-other-labels: true
