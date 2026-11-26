@@ -1,0 +1,11 @@
+# Prettier owns code; `just docs-audit` owns documentation.
+# Docs here are hand-wrapped, and frontend/AGENTS.md has to stay consistent with the
+# other AGENTS.md files -- only this one sits where prettier runs, so formatting it
+# would split them. Same reason backend/pyproject.toml sets ruff's extend-exclude.
+*.md
+
+# Generated or vendored
+dist
+node_modules
+package-lock.json
+src/lib/api-types.ts
