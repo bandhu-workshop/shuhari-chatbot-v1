@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 18:12 IST
+> **Last updated:** 2026-11-26 18:40 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -193,7 +193,8 @@ runs on every auth diff at no setup cost.
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
-| C1 | `ci.yml` with backend / integration / frontend / docker + publish | Bootstrap 3 | **done** |
+| C1 | CI with backend / integration / frontend / docker + publish | Bootstrap 3 | **done** |
+| C10 | Split into one workflow per area — `backend.yml`, `frontend.yml`, `images.yml`, `pr.yml` — so a red check names its own half of the repo. Each job writes the local reproduce command to the run summary | 2026-11-26 | **done** — reverses ADR 0004's "one workflow" rule; see its Revision |
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
 | C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **done** | 
 | C8 | `uv lock --check` in the `backend` job — `--frozen` alone misses a drifted `pyproject.toml` | Bootstrap 4 | **done** |
@@ -282,3 +283,4 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | **Q5 resolved:** the blueprint stops embedding copies of files and points at them instead; 1,002 duplicated lines removed | [blueprint.md](blueprint.md#one-source-of-truth) |
 | 2026-11-26 | Stamp currency is enforced mechanically, not by a human checklist: a doc's content and its stamp must change together | [../scripts/docs_audit.py](../scripts/docs_audit.py) |
 | 2026-11-26 | With squash merges a commit trailer goes on one commit or in the PR body, never on every commit | [../AGENTS.md](../AGENTS.md#rules) |
+| 2026-11-26 | One workflow per area (Backend / Frontend / Images / PR / CodeQL), reversing the earlier one-workflow rule: the split costs nothing and names the thing that broke | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision: workflow split |

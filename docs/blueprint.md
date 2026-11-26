@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1 — Blueprint
 
-> **Last updated:** 2026-11-26 17:48 IST
+> **Last updated:** 2026-11-26 18:40 IST
 
 A Claude/ChatGPT-style chatbot agent built on Google ADK. It is Project 1 of the Shuhari roadmap: learn every component of a modern assistant by building it, one working end-to-end slice at a time, with tracing and evals from the first slice.
 
@@ -505,12 +505,22 @@ Source of truth: [`frontend/nginx.conf`](../frontend/nginx.conf). No copy is kep
 Source of truth: [`frontend/.dockerignore`](../frontend/.dockerignore). No copy is kept here — see
 [One source of truth](#one-source-of-truth) above.
 
-#### `.github/workflows/ci.yml`
+#### `.github/workflows/` — one workflow per failing thing
 
-CI with required checks; publishes images only after all pass on main.
+Split per area on 2026-11-26 so a red check names its own half of the repo; see
+[ADR 0004 → Revision: workflow split](decisions/0004-verification-layers.md). A required
+status check matches the **job** name, not the workflow name, so renaming a job
+un-protects `main`.
 
-Source of truth: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). No copy is kept here — see
-[One source of truth](#one-source-of-truth) above.
+| Workflow | Jobs | Required on `main`? |
+| --- | --- | --- |
+| [`backend.yml`](../.github/workflows/backend.yml) | `backend`, `integration` | `backend` yes; `integration` at C5 |
+| [`frontend.yml`](../.github/workflows/frontend.yml) | `frontend` | yes |
+| [`images.yml`](../.github/workflows/images.yml) | `docker`, `publish` | `docker` yes; `publish` runs on `main` only |
+| [`pr.yml`](../.github/workflows/pr.yml) | `label` | no — hygiene |
+| [`codeql.yml`](../.github/workflows/codeql.yml) | `analyze` (python, js-ts) | no — 1-3 min against a ~30s gating budget |
+
+Every job writes the exact local command that reproduces a failure to the run summary.
 
 #### `.github/workflows/evals.yml`
 

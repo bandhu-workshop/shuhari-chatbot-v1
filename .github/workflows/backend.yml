@@ -1,0 +1,129 @@
+# Everything that can break in backend/. Split from the frontend deliberately, so a
+# red check names its own half of the repo and the fix is obvious from the check name
+# alone. See docs/decisions/0004-verification-layers.md -> Revision: workflow split.
+#
+# Job names are `backend` and `integration` and MUST stay that way: a required status
+# check matches the JOB name, not the workflow name, so renaming a job here silently
+# un-protects main.
+name: Backend
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Lockfile matches pyproject.toml
+        # --frozen uses uv.lock as-is and would not notice a drifted pyproject.toml.
+        # Dependabot's uv ecosystem can rewrite lower bounds; this is what catches it.
+        run: uv lock --check
+      - name: Lint (ruff)
+        run: uv run ruff check .
+      - name: Format (ruff)
+        run: uv run ruff format --check .
+      - name: Types (mypy)
+        run: uv run mypy src
+      - name: Unit tests (pytest)
+        run: uv run pytest -m "not integration" --cov --cov-report=term-missing
+      - name: How to reproduce this locally
+        if: failure()
+        run: |
+          {
+            echo "### Backend check failed"
+            echo
+            echo "Reproduce the whole job with one command:"
+            echo
+            echo '```bash'
+            echo 'cd backend && uv sync && uv run ruff check . && uv run ruff format --check . \'
+            echo '  && uv run mypy src && uv run pytest -m "not integration"'
+            echo '```'
+            echo
+            echo "Or \`just check\` from the repo root, which also runs the docs audit and the frontend."
+            echo "Autofix formatting and the mechanical lint rules with \`just fmt\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: shuhari
+          POSTGRES_PASSWORD: shuhari
+          POSTGRES_DB: shuhari
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shuhari"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: shuhari
+      POSTGRES_PASSWORD: shuhari
+      POSTGRES_DB: shuhari
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      # Guarded at STEP level so the job still runs and reports. Each guard clears
+      # itself the moment the file appears, so bootstrap 4c needs no edit here.
+      - name: Nothing to integration-test yet
+        if: hashFiles('backend/alembic.ini') == '' || hashFiles('backend/tests/integration/test_*.py') == ''
+        run: |
+          echo "Alembic and/or integration tests do not exist yet (bootstrap 4c)."
+          echo "alembic.ini:        ${{ hashFiles('backend/alembic.ini') != '' && 'present' || 'missing' }}"
+          echo "integration tests:  ${{ hashFiles('backend/tests/integration/test_*.py') != '' && 'present' || 'missing' }}"
+      - name: Migrations apply cleanly on an empty database
+        if: hashFiles('backend/alembic.ini') != ''
+        run: uv run alembic upgrade head
+      - name: Models and migrations are in sync
+        if: hashFiles('backend/alembic.ini') != ''
+        run: uv run alembic check
+      - name: Integration tests (pytest)
+        # pytest exits 5 ("no tests collected") when the directory is empty, which is a
+        # failure, so this waits for the first real integration test.
+        if: hashFiles('backend/tests/integration/test_*.py') != ''
+        run: uv run pytest -m integration
+      - name: How to reproduce this locally
+        if: failure()
+        run: |
+          {
+            echo "### Integration check failed"
+            echo
+            echo "This job needs a real Postgres. Locally:"
+            echo
+            echo '```bash'
+            echo 'just up                 # start Postgres + pgvector'
+            echo 'just db-upgrade         # apply migrations'
+            echo 'just test-integration   # pytest -m integration'
+            echo '```'
+            echo
+            echo "If \`alembic check\` is what failed, models and migrations disagree:"
+            echo "run \`just migration \"describe the change\"\` and read the generated file."
+          } >> "$GITHUB_STEP_SUMMARY"
