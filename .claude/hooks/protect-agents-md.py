@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""Block shell mutations of any AGENTS.md. Those files are human territory.
+"""Route shell mutations of any AGENTS.md to a human confirmation prompt.
 
-This covers the Bash escape hatch only. The hard guarantee for the file-writing tools is
-`permissions.deny` in .claude/settings.json -- declarative, with no script to go wrong.
-This hook exists because `sed -i AGENTS.md`, or a python heredoc calling write_text, would
-otherwise walk straight past that.
+Those files are human-owned, but not frozen: the agent may change one *after* the human
+says yes in that prompt, for that one edit. Not easy, still possible.
+
+This covers the Bash escape hatch only. The declarative half is `permissions.ask` in
+.claude/settings.json, which puts the file-writing tools behind the same prompt with no
+script to go wrong. This hook exists because `sed -i` on one of these files, or a python
+heredoc calling write_text, would otherwise walk straight past it and write silently.
+
+"ask" rather than "deny" because a deny has no release valve: the agent cannot comply even
+when the human wants the edit, so every change becomes a copy-paste chore -- while the
+part that actually protects the file, a human reading the exact diff before it lands, is
+what the prompt already provides.
 
 Why this is Python and not a grep one-liner: the first version matched the whole command
 string, so writing *any* file whose contents mentioned AGENTS.md was refused -- it blocked
@@ -34,19 +42,27 @@ SHELL_MUTATION = re.compile(
     re.MULTILINE,
 )
 
+# A quoted string that *ends* at AGENTS.md -- i.e. a path argument, not prose that happens
+# to name the file. The closing quote is the whole point: without it, `write_text("the
+# AGENTS.md files are human-owned")` looks identical to `write_text` on the file itself,
+# and the hook prompts on a command that writes somewhere else entirely.
+PATH_ARG = r"['\"][^'\"\n]{0,120}?AGENTS\.md['\"]"
+
 # A program opening AGENTS.md for writing, inside a heredoc body.
 PROGRAM_WRITE = re.compile(
-    r"AGENTS\.md[^\n]{0,80}?(?:write_text|writelines|truncate)"
-    r"|(?:write_text|open)\s*\([^)]{0,80}?AGENTS\.md"
-    r"|AGENTS\.md[^\n]{0,40}?['\"][wa]['\"]",
+    rf"(?:write_text|writelines|truncate|open)\s*\(\s*{PATH_ARG}"  # open("AGENTS.md", ...)
+    rf"|{PATH_ARG}[^\n]{{0,30}}?(?:write_text|writelines|truncate)"  # Path(...).write_text()
+    rf"|{PATH_ARG}\s*,\s*['\"][wa]",  # open(..., "w") with the mode split off
 )
 
 HEREDOC_START = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 
 REASON = (
-    "AGENTS.md files are human-owned and the agent must not modify them "
-    "(.claude/settings.json). Propose the wording in your reply and let the human apply "
-    "it. Every other doc -- docs/, README.md, localdev/ -- is fair game."
+    "This command writes to a human-owned instruction file, so the human confirms the "
+    "edit (.claude/settings.json -> permissions.ask). To approve it they need the exact "
+    "change: show the old wording, the new wording, and why the rule belongs there. If "
+    "the answer is no, put the proposed wording in your reply instead. Every other doc "
+    "-- docs/, README.md, localdev/ -- needs no prompt."
 )
 
 
@@ -85,7 +101,7 @@ def main() -> int:
             {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
-                    "permissionDecision": "deny",
+                    "permissionDecision": "ask",
                     "permissionDecisionReason": REASON,
                 }
             },
