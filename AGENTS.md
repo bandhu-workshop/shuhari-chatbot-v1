@@ -1,5 +1,7 @@
 # shuhari-chatbot-v1
 
+> **Last updated:** 2026-11-26 13:01 IST
+
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
 ## Read first

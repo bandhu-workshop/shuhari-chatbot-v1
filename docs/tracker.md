@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 12:44 IST
+> **Last updated:** 2026-11-26 13:01 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -30,6 +30,7 @@ the uv stub, and no tests, so all four CI checks fail.
 | 2 | Scaffold backend (uv) and frontend (Vite react-ts) | **done** | 2026-11-26. Vite 9 shipped oxlint, not ESLint — unresolved, see Open questions |
 | 3 | Add the specified files, create `.env` | **done** | 2026-11-26. Root `README.md`/`AGENTS.md` kept; `infra/searxng/settings.yml` deferred to milestone 4 |
 | 3b | GitHub remote, merge settings, protect `main` | **done** | 2026-11-26. Ruleset active without CI checks; see CI/CD track |
+| 3c | Backend layered structure refactor | **done** | 2026-11-26. Adapted from creditforge; see backend/AGENTS.md → Layout |
 | 4 | Dependencies + Alembic init | **next** | Creates `uv.lock`; installs prettier + vitest. Unblocks 3 of 4 CI checks |
 | 5 | Models, `just check-all` green, first CI green | todo | Needs one test in each place CI runs pytest/vitest |
 
@@ -58,7 +59,7 @@ These cut across milestones. Each row is a step, in order.
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
-| A1 | One `get_current_user()` FastAPI dependency returning a hardcoded dev user | Milestone 1 | **next** |
+| A1 | `get_current_user()` in `api/deps.py`, returning a hardcoded dev user | Milestone 1 | **next** |
 | A2 | Every route and mem0 call takes `user_id` from A1, never a literal or query param | Milestone 1+ | todo |
 | A3 | Real identity provider (Firebase Auth or IAP) behind the same dependency | Deployment phase 3 | todo |
 | A4 | Token verification + session cookie handling in `lib/api.ts` | Deployment phase 3 | todo |
@@ -84,19 +85,19 @@ Never manage another owner's tables.
 | --- | --- | --- | --- |
 | — | `alembic init` + `env.py` filter, `script.py.mako` imports sqlmodel | Bootstrap 4 | **next** |
 | 0001 | `CREATE EXTENSION IF NOT EXISTS vector` | Bootstrap 4 | todo |
-| 0002 | `feedback` table (first SQLModel table) | Milestone 3 | todo |
+| 0002 | `feedback` table (first SQLModel table in `models/`, registered in `db/base.py`) | Milestone 3 | todo |
 | — | ADK session/event/state tables | Milestone 3 | todo — created by ADK, not Alembic |
 | — | `mem0_memories` vector collection | Milestone 5 | todo — created by mem0, not Alembic |
 
-Flow: edit `db/models.py` → `just migration "msg"` → **read the generated file** →
+Flow: edit a table in `models/` (register it in `db/base.py`) → `just migration "msg"` → **read the generated file** →
 `just db-upgrade` → commit both. CI runs `alembic check`.
 
 ### Observability
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
-| O1 | `tracing.py`: OTEL + OpenInference → Phoenix, no-op when endpoint unset | Milestone 1 | todo |
-| O2 | Structured JSON logs to stdout, with `session_id` / `user_id` in context | Milestone 1 | todo |
+| O1 | `ai/observability/tracing.py`: OTEL + OpenInference → Phoenix, no-op when endpoint unset | Milestone 1 | todo |
+| O2 | `core/logging.py`: JSON logs to stdout, with `session_id` / `user_id` in context | Milestone 1 | todo |
 | O3 | Time-to-first-token visible in traces | Milestone 2 | todo |
 | O4 | Swap the OTEL exporter to Cloud Trace in production | Deployment phase 3 | todo |
 
@@ -104,7 +105,7 @@ Flow: edit `db/models.py` → `just migration "msg"` → **read the generated fi
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
-| E1 | `evals/run.py` + 10-case chat dataset + `baseline.json` | Milestone 1 | todo |
+| E1 | `evals/run.py` + `ai/evaluation/` scoring + 10-case chat dataset + `baseline.json` | Milestone 1 | todo |
 | E2 | Tool-selection + injection datasets | Milestone 4 | todo |
 | E3 | Memory datasets (recall, outdated, wrong, deleted) | Milestone 5 | todo |
 | E4 | Citation-support dataset | Milestone 6 | todo |
@@ -146,12 +147,23 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2 | Pure local development, milestones 2–7 | todo |
 | 3 | Terraform + Workload Identity Federation + real deploy + cloud observability | todo — after milestone 7 |
 
+### Backend structure
+
+| Step | What | When | Status |
+| --- | --- | --- | --- |
+| B1 | Layered skeleton: `core`/`api`/`db`/`models`/`schemas`/`ai` | Bootstrap 3c | **done** |
+| B2 | `core/config.py`, `core/logging.py`, `core/exceptions.py` | Milestone 1 | todo |
+| B3 | `main.py` factory + `api/health.py` + `api/deps.py` | Milestone 1 | todo |
+| B4 | `db/base.py` + `db/session.py` | Milestone 1 | todo |
+| B5 | `tests/unit/test_package_structure.py` enforcing the layout | Bootstrap 4 | todo |
+| B6 | `services/` layer added when session CRUD needs a home | Milestone 3 | todo |
+
 ### Frontend
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
 | F1 | Tailwind + vite proxy + `test` script | Bootstrap 4 | **next** |
-| F2 | `lib/api.ts` as the only caller of the backend; `VITE_API_BASE_URL` | Milestone 2 | todo |
+| F2 | `lib/api.ts` as the only caller of the backend; `VITE_API_BASE_URL` (`/api/v1`) | Milestone 2 | todo |
 | F3 | Streaming renderer, Stop button, SSE reconnect | Milestone 2 | todo |
 | F4 | Sessions sidebar | Milestone 3 | todo |
 | F5 | Tool-call cards | Milestone 4 | todo |
@@ -167,6 +179,8 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | Q1 | oxlint (what Vite 9 scaffolded) or ESLint (what `frontend/AGENTS.md` says)? | 2026-11-26 | Bootstrap 4 — pick before adding frontend deps |
 | Q2 | mem0 `history_db_path`: keep SQLite or move to Postgres? | 2026-11-26 | Milestone 5 |
 | Q3 | Should `localdev/features/` be tracked in git instead of ignored? | 2026-11-26 | No — reversible with `git mv` |
+| Q4 | Add SPDX headers + `CITATION.cff` like creditforge and shuhari-cli? | 2026-11-26 | No |
+| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md`, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | No — but every structural change currently has to be made twice |
 
 ---
 
@@ -178,3 +192,4 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Public repo under `bandhu-workshop`, MIT, no AI authorship in commits | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Ruleset (not classic protection); required CI checks added incrementally | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Squash-only merges, not rebase — every commit on `main` is a CI-verified state | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
+| 2026-11-26 | Backend layered as `core`/`api`/`db`/`models`/`schemas`/`ai`, adapted from creditforge; evals split code-vs-data; routes versioned `/api/v1` | [../backend/AGENTS.md](../backend/AGENTS.md) → Layout |

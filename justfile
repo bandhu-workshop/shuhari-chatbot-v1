@@ -38,7 +38,7 @@ logs service="":
 dev: up
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
-    (cd backend && uv run uvicorn shuhari.api.main:app --reload --port 8000) &
+    (cd backend && uv run uvicorn shuhari.main:app --reload --port 8000) &
     (cd frontend && npm run dev) &
     wait
 
@@ -47,7 +47,7 @@ adk:
     cd backend && uv run adk web src/shuhari/agents
 
 api:
-    cd backend && uv run uvicorn shuhari.api.main:app --reload --port 8000
+    cd backend && uv run uvicorn shuhari.main:app --reload --port 8000
 
 web:
     cd frontend && npm run dev

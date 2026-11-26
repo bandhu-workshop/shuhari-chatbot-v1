@@ -1,6 +1,8 @@
 # frontend
 
-React + TypeScript, Vite, Tailwind. `node_modules` lives here. Talks only to the backend API on :8000.
+> **Last updated:** 2026-11-26 13:01 IST
+
+React + TypeScript, Vite, Tailwind. `node_modules` lives here. Talks only to the backend API on :8000, under `/api/v1`.
 
 ## Layout
 ```
@@ -31,7 +33,9 @@ tests/e2e/         # Playwright, later
 Decided in [docs/decisions/0001-deployment-strategy.md](../docs/decisions/0001-deployment-strategy.md).
 Local-first development, but these are cheap now and expensive to retrofit.
 
-- **The API base URL comes from `VITE_API_BASE_URL`**, defaulting to `/api`. Locally and under
+- **The API base URL comes from `VITE_API_BASE_URL`**, defaulting to `/api/v1`. The backend
+  versions its routes; `/healthz` and `/readyz` sit outside the versioned prefix and are
+  not called from the app. Locally and under
   `just stack` the backend is same-origin behind nginx; in production the frontend may be served
   from Firebase Hosting or GCS while the backend is a separate Cloud Run service on another
   origin. `lib/api.ts` is the only file that reads it.
