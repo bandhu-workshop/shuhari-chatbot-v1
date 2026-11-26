@@ -1,6 +1,6 @@
 # 0004 — How we verify: the layers we use, and the ones we skip
 
-> **Last updated:** 2026-11-26 14:52 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 **Status:** accepted · **Date:** 2026-11-26 · **Revised:** 2026-11-26 (see Revision below)
 

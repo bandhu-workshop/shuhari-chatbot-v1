@@ -8,6 +8,14 @@ Checks:
   1. Every tracked Markdown doc carries a `Last updated:` stamp under its H1.
   2. No stamp is dated in the future.
   3. Every relative Markdown link to a repo file resolves.
+  4. A doc whose content changed has its stamp changed in the same change.
+
+Check 4 is what makes the stamps mean something. A stamp that is merely *present* says
+nothing; "is it current?" used to be a human check, which by this project's own rules is
+the wrong kind of check. Comparing the stamp's time to the commit's time does not work --
+the stamp is written minutes before the commit, so every doc looks stale. The exact
+question is instead: did the change that touched this doc also touch its stamp line? That
+has no tolerance to tune and no false positives.
 
 Links inside fenced code blocks are ignored: docs/blueprint.md embeds whole copies of
 other files, whose links are relative to where those files will live, not to the
@@ -34,6 +42,7 @@ NO_STAMP = {
 }
 
 STAMP = re.compile(r"^> \*\*Last updated:\*\* (\d{4}-\d{2}-\d{2})", re.MULTILINE)
+STAMP_LINE = "**Last updated:**"
 LINK = re.compile(r"\[[^\]]*\]\(([^)#]+?)(?:#[^)]*)?\)")
 FENCE = re.compile(r"^(`{3,}|~{3,})")
 
@@ -54,11 +63,41 @@ def outside_fences(lines: list[str]) -> list[str]:
     return kept
 
 
-def tracked_markdown() -> list[Path]:
+def git(*args: str) -> str:
     out = subprocess.run(
-        ["git", "ls-files", "*.md"], cwd=ROOT, capture_output=True, text=True, check=True
+        ["git", *args], cwd=ROOT, capture_output=True, text=True, check=False
     )
-    return [ROOT / line for line in out.stdout.splitlines() if line]
+    return out.stdout
+
+
+def tracked_markdown() -> list[Path]:
+    return [ROOT / line for line in git("ls-files", "*.md").splitlines() if line]
+
+
+def stamp_was_updated(rel: str) -> bool | None:
+    """Did the change that last touched this doc also touch its stamp line?
+
+    Looks at uncommitted changes first, so the problem is caught *before* the commit,
+    which is when it is still cheap to fix. Falls back to the last commit that touched
+    the file, which is what runs in CI on a clean checkout.
+
+    Returns None when there is nothing to judge: no changes and no history.
+    """
+    for diff in (
+        git("diff", "HEAD", "--unified=0", "--", rel),
+        None,  # sentinel: fall back to the last commit
+    ):
+        if diff is None:
+            sha = git("log", "-1", "--format=%H", "--", rel).strip()
+            if not sha:
+                return None
+            diff = git("show", "--format=", "--unified=0", sha, "--", rel)
+        if not diff.strip():
+            continue
+        return any(
+            line.startswith("+") and STAMP_LINE in line for line in diff.split("\n")
+        )
+    return None
 
 
 def main() -> int:
@@ -79,6 +118,10 @@ def main() -> int:
                 stamped = dt.date.fromisoformat(match.group(1))
                 if stamped > today:
                     problems.append(f"{rel}: stamp {stamped} is in the future")
+                elif stamp_was_updated(rel) is False:
+                    problems.append(
+                        f"{rel}: content changed but the 'Last updated' stamp did not"
+                    )
 
         for target in LINK.findall("\n".join(outside_fences(lines))):
             if target.startswith(("http://", "https://", "mailto:")):

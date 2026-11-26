@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last updated:** 2026-11-26 13:44 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 How the running system fits together. Grows with each milestone. **State is marked
 honestly** — most of this is designed but not yet built.
@@ -28,12 +28,20 @@ browser ──HTTP/SSE──▶ FastAPI (/api/v1) ──▶ ADK agent ──Lite
 
 | Piece | Where | State |
 | --- | --- | --- |
-| React UI | `frontend/src/` | scaffold only |
-| HTTP API | `backend/src/shuhari/api/` | skeleton |
-| Agent | `backend/src/shuhari/ai/agents/chatbot/` | skeleton |
-| Memory | `backend/src/shuhari/ai/memory/` | skeleton — milestone 5 |
-| Tracing | `backend/src/shuhari/ai/observability/` | skeleton — milestone 1 |
+| React UI | `frontend/src/` | Vite scaffold; toolchain complete (Tailwind, vitest, prettier, `tsc -b`) |
+| HTTP API | `backend/src/shuhari/api/` | empty packages — milestone 1c |
+| Agent | `backend/src/shuhari/ai/agents/chatbot/` | empty packages — milestone 1d |
+| Memory | `backend/src/shuhari/ai/memory/` | empty packages — milestone 5 |
+| Tracing | `backend/src/shuhari/ai/observability/` | empty packages — milestone 1e |
+| Dependencies | `backend/pyproject.toml`, `frontend/package.json` | **installed** — 142 Python packages, no resolver conflicts |
+| Tests | `backend/tests/unit/`, `frontend/tests/unit/` | **22 + 4 passing.** Both enforce structure, not behaviour — there is no behaviour yet |
+| Alembic | `backend/alembic/` | **not created** — bootstrap 4c, blocked on `core/config.py` |
 | Postgres + pgvector, Phoenix, SearXNG, Ollama | `compose.yaml` | defined, not yet started |
+| CI | `.github/workflows/` | `backend`, `frontend`, `docker`, `label` green and required; CodeQL green, not gating; `integration` red pending 4c |
+
+The honest summary: **the scaffolding is finished and none of the application exists.**
+Every package imports, every check runs, and nothing yet answers a question. Milestone 1a
+(`core/config.py`) is the first file with behaviour in it.
 
 ---
 
@@ -115,6 +123,22 @@ lives in `backend/evals/` (datasets, baseline, runner CLI), outside `src/` so it
 packaged into the wheel or the Docker image.
 
 ---
+
+## Verifying it
+
+Four layers, with the skipped tools and the reasoning in
+[decisions/0004-verification-layers.md](decisions/0004-verification-layers.md):
+
+| Layer | What | Gating? |
+| --- | --- | --- |
+| Static | ruff (incl. `S` = flake8-bandit), mypy, oxlint, prettier, `tsc -b` | yes |
+| Tests | pytest, vitest; `pytest-cov` with no global threshold | yes |
+| Deep static | CodeQL, python + javascript-typescript | no — 1–3 min against a ~35s gating budget |
+| Platform | secret scanning + push protection, Dependabot alerts + security updates | n/a |
+| Browser | Playwright **MCP**, driven by the agent at feature completion | no — on demand |
+| End to end | scripted Playwright, `frontend/tests/e2e/` | no — on demand via the `run:e2e` label. Milestone 2 |
+
+`just check` runs the gating layers locally, so none of this is locked to GitHub Actions.
 
 ## Deployment
 

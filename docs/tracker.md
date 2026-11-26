@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 17:15 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -173,6 +173,7 @@ reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verific
 | V12 | `pip-audit` as a ~5s step in the `backend` job | **decide** | **Recommended.** V9's failure removed the pre-merge dependency gate, which was the stated reason for skipping `pip-audit`. Dependabot alerts only fire post-merge. Portable, no GitHub dependency |
 | V10 | `pytest-cov` wired, no global `fail_under`; 95% target applies to the auth module only | Bootstrap 4b | **done** | 
 | V11 | `pip-licenses` as a monthly scheduled job | if this is ever redistributed | todo — deferred, not a PR gate |
+| V15 | `just docs-audit` check 4: a doc whose content changed must have its stamp changed in the same change | 2026-11-26 | **done** — found three genuinely stale stamps on its first run, and one more while this row was being written |
 | V13 | Playwright **MCP** server for agentic browser verification at feature completion | 2026-11-26 | **done** — `.mcp.json`; see [../AGENTS.md](../AGENTS.md#browser-verification-playwright-mcp) |
 | V14 | Scripted Playwright E2E suite, on demand via the `run:e2e` label | Milestone 2 | todo — row F8 |
 | V3 | The three auth tests: route-has-identity-dependency, cross-user isolation, no mass assignment | Milestone 1c, extended at 3 and 5 | todo — rows Z1, Z4 |
@@ -247,7 +248,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | Q2 | mem0 `history_db_path`: keep SQLite or move to Postgres? | 2026-11-26 | Milestone 5 |
 | Q3 | Should `localdev/features/` be tracked in git instead of ignored? | 2026-11-26 | No — reversible with `git mv` |
 | Q4 | Add SPDX headers + `CITATION.cff` like creditforge and shuhari-cli? | 2026-11-26 | No |
-| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md` at lines 553-735, `frontend/AGENTS.md` from 736, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | **Recommend yes — the copies are already unreliable.** Audited 2026-11-26: the backend copy is missing PR #13's Capacity, TDD, ruff-`S` and auth-test sections; the frontend copy still says `ESLint` (changed in PR #7) and `App.tsx` (renamed in PR #11). Six known divergences across five PRs. Syncing a line at a time is theatre while the rest rots; the audit cannot catch it because a fenced copy is sample text, not a link |
+| ~~Q5~~ | ~~`docs/blueprint.md` embeds full copies of files that now exist for real.~~ **Resolved 2026-11-26: replaced with pointers.** 1,002 lines removed (1,599 → 621), 18 of 19 embedded copies gone. `infra/searxng/settings.yml` kept, because that file does not exist yet so its block is still a specification rather than a duplicate. See [blueprint.md → One source of truth](blueprint.md#one-source-of-truth) | 2026-11-26 | closed |
 
 ---
 
@@ -273,3 +274,6 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Gating CI keeps a ~35s budget; one workflow with parallel jobs, a second workflow only when the trigger differs | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Speed |
 | 2026-11-26 | Playwright **MCP** for agentic browser verification at feature completion; scripted E2E deferred to milestone 2 and gated on the `run:e2e` label, never every PR | [../AGENTS.md](../AGENTS.md#browser-verification-playwright-mcp) |
 | 2026-11-26 | Labels: 4 automatic `area:*` from paths + 3 manual controls (`run:e2e`, `needs:decision`, `blocked`). `type:*` deferred to the first release, `priority:*` not used. Every PR gets labelled | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |
+| 2026-11-26 | **Q5 resolved:** the blueprint stops embedding copies of files and points at them instead; 1,002 duplicated lines removed | [blueprint.md](blueprint.md#one-source-of-truth) |
+| 2026-11-26 | Stamp currency is enforced mechanically, not by a human checklist: a doc's content and its stamp must change together | [../scripts/docs_audit.py](../scripts/docs_audit.py) |
+| 2026-11-26 | With squash merges a commit trailer goes on one commit or in the PR body, never on every commit | [../AGENTS.md](../AGENTS.md#rules) |

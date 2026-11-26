@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 14:52 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
@@ -18,7 +18,9 @@ evals, security, CI/CD, deployment). Only build what the current step or milesto
 
 ## Docs conventions
 - **Every Markdown doc carries a `Last updated` stamp** directly under its H1, and it is
-  updated on every edit:
+  updated on every edit. `just docs-audit` enforces this mechanically: it fails when a
+  doc's content changed without its stamp line changing in the same change. Bumping the
+  stamp is part of editing a doc, not a step to remember afterwards.
   ```markdown
   # Title
 
@@ -37,7 +39,13 @@ always the answer belongs in one of these, not in a new file.
 | Question | Document |
 | --- | --- |
 | Where are we? What's next? | [`docs/tracker.md`](docs/tracker.md) |
-| What talks to what? | [`docs/architecture.md`](docs/architecture.md) |
+| What talks to what? What state is it in? | [`docs/architecture.md`](docs/architecture.md) |
+| How big must this scale? | [`docs/decisions/0003-capacity-target.md`](docs/decisions/0003-capacity-target.md) — 50 concurrent users |
+| How do we check our own work? Why isn't tool X here? | [`docs/decisions/0004-verification-layers.md`](docs/decisions/0004-verification-layers.md) |
+| What do the labels mean? | [`docs/github-workflow/repo-branch-protection.md`](docs/github-workflow/repo-branch-protection.md#labels) |
+| How do I open a pull request? | [Pull requests](#pull-requests) below |
+| How do I verify a feature in a browser? | [Browser verification](#browser-verification-playwright-mcp) below |
+| What style do I write code in? | [Coding style](#coding-style) below |
 | Why was this decided? | [`docs/decisions/NNNN-*.md`](docs/decisions/) — **ADRs override the blueprint** |
 | What was originally specified? | [`docs/blueprint.md`](docs/blueprint.md) |
 | How do branches, PRs and protection work? | [`docs/github-workflow/repo-branch-protection.md`](docs/github-workflow/repo-branch-protection.md) |
@@ -57,10 +65,17 @@ always the answer belongs in one of these, not in a new file.
 
 ## Documentation audit
 
-`just docs-audit` (part of `just check`) checks mechanically that every tracked Markdown
-doc carries a `Last updated` stamp, that no stamp is in the future, and that every
-relative link resolves. Links inside fenced code blocks are ignored, because
-`docs/blueprint.md` embeds whole copies of other files.
+`just docs-audit` (part of `just check`) checks four things mechanically: every tracked
+Markdown doc carries a `Last updated` stamp, no stamp is in the future, every relative link
+resolves, and **a doc whose content changed had its stamp changed in the same change**.
+
+That last check is what makes the stamps mean anything — a stamp that is merely *present*
+says nothing. Comparing a stamp's time against the commit's time does not work, because the
+stamp is written minutes before the commit and every doc then looks stale. The exact
+question is whether the same change touched both, which has no tolerance to tune.
+
+Links inside fenced code blocks are ignored, because a link in a fence is sample text
+rather than a link.
 
 It cannot check meaning. Those stay human:
 
@@ -279,6 +294,9 @@ every pull request. The MCP server answers *"does this work?"*; a scripted suite
 - Always use the `git`/`gh` CLI. Branch names: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`.
   Squash-merge only; the PR title becomes the commit message on `main`, so write it as one.
   Open the pull request as a **draft** with the first commit — see [Pull requests](#pull-requests).
+- **With squash merges, a commit trailer belongs on one commit, not every commit.** Squash
+  concatenates all the commit bodies, so a trailer repeated on four commits appears four
+  times on `main`. Put it on the final commit, or in the pull request body.
 - **Prefer the CLI over MCP servers.** `git` and `gh` for anything version-control or
   GitHub, ordinary shell tools for everything else — they are scriptable, inspectable, and
   already what the `justfile` uses. **This is a preference, not a prohibition:** when an MCP

@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 16:31 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 A Claude/ChatGPT-style chatbot agent built on Google ADK, as a learning project: every component of a modern assistant (agent loop, streaming, sessions, tools, memory, research, evals) is built in small end-to-end milestones, traced in Phoenix and measured with evals.
 
@@ -10,11 +10,13 @@ A Claude/ChatGPT-style chatbot agent built on Google ADK, as a learning project:
 
 | Doc | What's in it |
 | --- | --- |
-| [`docs/blueprint.md`](docs/blueprint.md) | The full spec: architecture decisions, milestones, eval method, CI/CD, and every file needed to bootstrap the repo |
-| [`docs/architecture.md`](docs/architecture.md) | How the running system fits together (grows with each milestone) |
+| **[`docs/tracker.md`](docs/tracker.md)** | **Where we are and what's next.** Start here — it is the source of truth for position and for every cross-cutting track |
+| [`docs/architecture.md`](docs/architecture.md) | How the running system fits together, with honest state markers |
+| [`docs/decisions/`](docs/decisions/) | ADRs — one note per non-obvious choice. **These override the blueprint** |
+| [`docs/blueprint.md`](docs/blueprint.md) | The original spec: milestones, eval method, CI/CD, and which files exist and why |
+| [`docs/github-workflow/repo-branch-protection.md`](docs/github-workflow/repo-branch-protection.md) | Branch protection, merge rules, the pull-request flow, labels |
 | [`docs/roadmap.md`](docs/roadmap.md) | The wider Shuhari roadmap (Project 1 ADK → Project 2 from scratch) |
-| [`docs/decisions/`](docs/decisions/) | One short note per non-obvious choice |
-| [`AGENTS.md`](AGENTS.md) | Rules for coding agents (`CLAUDE.md` links to it) |
+| [`AGENTS.md`](AGENTS.md) | Rules for coding agents: coding style, pull requests, browser verification (`CLAUDE.md` links to it) |
 
 ## Layout
 
@@ -82,16 +84,21 @@ Rules: keep the defaults on the cheapest model; try a bigger model only by chang
 | `just stack` | Full stack in containers (prod-like) |
 | `just logs [service]` | Follow container logs |
 | `just test` / `just test-integration` | Unit tests / integration tests against Postgres |
-| `just lint` / `just fmt` | Check / auto-format (ruff, mypy, eslint, prettier, tsc) |
-| `just check` | Fast local check: lint + unit tests |
+| `just lint` / `just fmt` | Check / auto-format (ruff, mypy, oxlint, prettier, `tsc -b`) |
+| `just docs-audit` | Documentation checks: stamps present and current, links resolve |
+| `just check` | Fast local check before every commit: docs + lint + unit tests |
 | `just check-all` | Everything CI runs |
 | `just eval [dataset] [repeats]` | Run evals vs baseline, e.g. `just eval memory` |
 | `just eval-baseline` | Save current scores as the new baseline |
 | `just migration "msg"` | Generate a migration (review before applying) |
 | `just db-upgrade` / `just db-downgrade` | Apply migrations / undo the last one |
 | `just types` | Regenerate frontend API types from the backend |
-| `just branch` / `pr` / `merge` / `sync` | Git flow helpers |
-| `just protect-main` | One-time, after CI is green: protect main |
+| `just branch <name>` | Start a feature branch from fresh `main` |
+| `just draft` | Open a **draft** PR for this branch, assigned to you |
+| `just push` | Push and watch this branch's CI |
+| `just ready` | Mark the PR ready; squash-merges once CI is green |
+| `just merge` / `just sync` | Squash-merge a non-draft PR / return to updated `main` |
+| `just protect-main` | Apply the `main` ruleset; idempotent, safe to re-run after editing it |
 
 ## Git flow
 

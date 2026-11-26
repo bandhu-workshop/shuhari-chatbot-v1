@@ -1,6 +1,6 @@
 # frontend
 
-> **Last updated:** 2026-11-26 14:52 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 React + TypeScript, Vite, Tailwind. `node_modules` lives here. Talks only to the backend API on :8000, under `/api/v1`.
 

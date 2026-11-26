@@ -1,6 +1,6 @@
 # backend
 
-> **Last updated:** 2026-11-26 14:52 IST
+> **Last updated:** 2026-11-26 17:48 IST
 
 Python 3.12, uv (`.venv` lives here, next to `pyproject.toml` and `uv.lock`). Google ADK for agents, FastAPI for the API.
 Run commands from the repo root with `just`, or from this folder with `uv run ...`.
@@ -183,10 +183,18 @@ MEM0_CONFIG = {
 
 ## Conventions
 - Type hints everywhere; ruff + mypy clean. Async for I/O.
-- **Ruff's `S` rules (flake8-bandit) are enabled** — hardcoded secrets, weak hashing,
-  `eval`, insecure random. Enable them in `pyproject.toml` at bootstrap step 4a. This is
-  why we don't install `bandit` separately; see
+- **Ruff's `S` rules (flake8-bandit) are enabled** in `pyproject.toml` — hardcoded secrets,
+  weak hashing, `eval`, insecure random. `S101` is ignored under `tests/` and `evals/`,
+  where bare `assert` is the idiom. This is why no separate `bandit` is installed; see
   [ADR 0004](../docs/decisions/0004-verification-layers.md).
+- **`extend-exclude = ["*.md"]`.** Ruff also formats Python blocks inside Markdown, and we
+  don't want it reflowing hand-wrapped docs — `just docs-audit` owns those. One formatter
+  per file type; `frontend/.prettierignore` excludes `*.md` for the same reason.
+- **mypy is `strict` with `ignore_missing_imports`.** ADK, mem0, litellm and the Phoenix
+  packages ship few or no stubs, so without it `mypy src` fails on imports alone and tells
+  us nothing about our own code.
+- **Coverage has no global `fail_under`.** A repo-wide number is theatre. The 95% target
+  applies to the auth module when it lands.
 - Naming is ruff/PEP 8: `snake_case` modules and packages, `PascalCase` classes,
   `snake_case` functions and variables, `UPPER_SNAKE` constants. No date prefixes and no
   hyphens in anything importable — see [Naming](../AGENTS.md#naming).
