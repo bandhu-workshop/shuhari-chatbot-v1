@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 17:48 IST
+> **Last updated:** 2026-11-26 19:20 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
@@ -213,6 +213,33 @@ Why draft-first rather than opening when done:
 - `backend`, `docker` and `frontend` are required checks under the **strict** policy, so a
   branch that falls behind `main` has to be updated before it merges. Pushing early
   surfaces that immediately rather than at merge time.
+
+### Writing the title and body
+
+`just draft` uses `gh pr create --fill`, so **the commit message *is* the pull-request
+body**, and on squash it becomes the commit message on `main`. One artifact, three places.
+Write it short and scannable:
+
+```
+**What**
+- one line per change
+
+**Why**        only where the diff does not say it; one line each, or link an ADR
+- ...
+
+**Verified**
+- the command that was run, and its result
+
+**Deferred**   delete if nothing was left out on purpose
+- ...
+```
+
+- **Title:** Conventional prefix, imperative, ≤ 72 characters. It is the commit subject.
+- **Body: aim for ≤ 15 lines.** Bullets, not paragraphs.
+- **If a rationale needs more than one line, it belongs in an ADR** and the body links to
+  it. A pull-request body is the worst place to keep reasoning — nobody reads git history
+  looking for it, and a paragraph here usually just restates an ADR from the same change.
+- Don't drop *what was done* to hit the limit. Compress the prose, never the list.
 
 Rules that still apply:
 
