@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1 — Blueprint
 
-> **Last updated:** 2026-11-26 12:44 IST
+> **Last updated:** 2026-11-26 16:31 IST
 
 A Claude/ChatGPT-style chatbot agent built on Google ADK. It is Project 1 of the Shuhari roadmap: learn every component of a modern assistant by building it, one working end-to-end slice at a time, with tracing and evals from the first slice.
 
@@ -301,7 +301,7 @@ Rulesets are free on public repos; private repos need a paid GitHub plan.
 
 ### Daily flow
 
-See [README.md](../README.md#git-flow) (`just branch` → `just check` → `just pr` → `just merge` → `just sync`).
+See [README.md](../README.md#git-flow) (`just branch` → `just draft` → `just check`/`just push` → `just ready` → `just sync`). Pull requests open as drafts with the first commit.
 
 ### main protection (`.github/rulesets/main.json`)
 
@@ -486,9 +486,11 @@ Rules: keep the defaults on the cheapest model; try a bigger model only by chang
 
 ```bash
 just branch feat/session-store   # fresh branch from main
-just check                       # before pushing
-just pr                          # push + open PR
-just merge                       # squash-merges when CI is green
+# ... first commit ...
+just draft                       # push + open a DRAFT PR, assigned to you
+just check                       # before each push
+just push                        # push + watch this branch's CI
+just ready                       # mark ready; squash-merges when CI is green
 just sync                        # back on updated main
 ```
 

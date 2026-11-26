@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-11-26 14:52 IST
 
-**Status:** accepted · **Date:** 2026-11-26
+**Status:** accepted · **Date:** 2026-11-26 · **Revised:** 2026-11-26 (see Revision below)
 
 ## Context
 
@@ -28,7 +28,9 @@ doesn't quietly grow back.
 | --- | --- | --- |
 | **ruff's `S` rules** | `bandit` | Ruff *is* flake8-bandit under the `S` prefix — hardcoded secrets, weak hashing, `eval`, insecure random. Already a dependency, already in `just lint`. One tool, not two |
 | **GitHub Dependabot** | `pip-audit` | Already configured in `.github/dependabot.yml` for `uv`, `npm`, `github-actions` and `docker`. Free, monthly, grouped, and nothing to remember |
-| **GitHub secret scanning + push protection** | `gitleaks` | Free on public repositories, and push protection blocks the commit rather than reporting it afterwards |
+| **GitHub secret scanning + push protection** | `gitleaks` | Free on public repositories, and push protection **rejects the push** rather than failing CI once the secret is already in remote history. Enabled 2026-11-26 — see Revision |
+| **GitHub Dependency Review** | part of what `pip-audit` would do | A pull-request gate that refuses a dependency change carrying a known high-severity advisory. Dependabot alerts tell you *after* the merge; this refuses the merge. Runs in seconds and needs nothing installed |
+| **CodeQL** | `semgrep` | Taint tracking and dataflow analysis, which ruff genuinely cannot do. Free on public repositories. **Not a required check** — see Speed below |
 | — | `semgrep` | **Skipped.** Its value here is its JWT and OWASP rulesets, and we issue no tokens (see below). Revisit only if that changes |
 
 Dependabot's `uv` ecosystem has a known rough edge: it does not honour
@@ -49,8 +51,10 @@ perfectly well-formed request. Three test shapes carry nearly all the value:
    404 or 403. Written as a role × route × expected-status matrix, so adding a case is one line.
 3. **No mass assignment.** A write endpoint ignores fields the caller must not set.
 
-These are tracker rows **Z1** and **Z4**. Coverage is measured on the auth module only
-(target 95%), not repo-wide — a repo-wide coverage number is theatre.
+These are tracker rows **Z1** and **Z4**. Coverage is measured with `pytest-cov` on the
+auth module only (target 95%), not repo-wide — a repo-wide coverage number is theatre, and
+with the package still mostly empty `__init__.py` files it would read near 100% and mean
+nothing. `[tool.coverage.report]` therefore sets no `fail_under`.
 
 ### Layer 3 — dynamic, when there is something to point at
 
@@ -89,3 +93,59 @@ line**. Everything else is a tool we already run.
 
 Tracker rows **V1–V6** carry the sequencing. If a skipped tool is ever added, it is added
 here first, with the bug it would have caught.
+
+## Speed
+
+A verification layer that slows the feedback loop gets worked around, so the gating
+pipeline has a budget: **it finishes in about 35 seconds** and adding to it requires a
+reason.
+
+| | Wall clock |
+| --- | --- |
+| `ci.yml` gating jobs, in parallel | ~35s |
+| `dependency-review` | ~10s, parallel — no effect on wall clock |
+| coverage | +~1s |
+| **CodeQL** | **1-3 min, in its own workflow, not a required check** |
+
+CodeQL is decoupled on purpose: gating a 35-second pipeline on a 3-minute scan defeats the
+point of the fast pipeline. Its findings go to the Security tab, and it also runs weekly so
+that an advisory published after a merge is still caught.
+
+One workflow with parallel jobs beats several workflows. Each extra workflow repeats
+checkout, toolchain setup and dependency install (~8-10s), while jobs *inside* one workflow
+already run in parallel — so splitting by topic costs overhead and buys nothing. A separate
+workflow is justified only when the **trigger** differs, which is why CodeQL is separate.
+
+## Revision — 2026-11-26
+
+Reconsidered against a standard Python CI checklist (ruff, mypy, pytest, pytest-cov,
+pip-audit, pip-licenses, gitleaks, bandit, Dependabot, CodeQL, Dependency Review).
+
+**Added:** CodeQL, Dependency Review, `pytest-cov`. None had been considered in the first
+draft, and each does something nothing else here does.
+
+**Still skipped,** for the reasons already given: `bandit` (ruff's `S` *is* flake8-bandit —
+running both runs identical rules twice), `gitleaks` (GitHub secret scanning with push
+protection is strictly better), `pip-audit` (a third reader of the same OSV/PyPI advisory
+data that Dependabot alerts and Dependency Review already consume).
+
+**Deferred:** `pip-licenses` — worth a monthly scheduled job if this is ever redistributed,
+but not a pull-request gate, and it needs translating for `uv`. Also Trivy, Grype, Syft,
+OSV-Scanner and Semgrep; Trivy on our own images is the first of those worth revisiting.
+
+**A correction this revision forced.** The original version of this ADR justified skipping
+`gitleaks` on the grounds that GitHub secret scanning replaced it — but secret scanning was
+never actually switched on. Tracker row V2 ("confirm it is on") sat at `todo` for several
+pull requests, so during that window there was no secret scanning of any kind. The ADR
+described an intended configuration as though it were the live one.
+
+Now enabled and verified on 2026-11-26: `secret_scanning`,
+`secret_scanning_push_protection`, and Dependabot **security updates** (separate from the
+version updates in `dependabot.yml`, and also previously off). Two further toggles,
+`secret_scanning_non_provider_patterns` and `secret_scanning_validity_checks`, are accepted
+by the API but stay `disabled` — they appear to need the web UI or are unavailable on a free
+public repository. Not pursued.
+
+**The lesson, worth more than the fix:** an ADR that swaps a tool for a platform feature has
+to verify the feature is enabled, in the same change. Otherwise the ADR reads as coverage
+while the gap is wide open.

@@ -176,6 +176,43 @@ Why this is a rule and not a preference: these skills carry exactly the steps th
 skipped under momentum — writing the test first, verifying before claiming success, and
 not grading your own work.
 
+## Pull requests
+
+**Draft first, always.** The pull request is opened with the *first* commit, not when the
+work is finished.
+
+| Step | Command |
+| --- | --- |
+| Branch from fresh `main` | `just branch feat/x` |
+| First commit, then open the draft | `just draft` |
+| Keep committing, watching CI each push | `just push` |
+| Green and finished: ready + auto-merge | `just ready` |
+| Back to `main` afterwards | `just sync` |
+
+Why draft-first rather than opening when done:
+
+- **CI runs on every push**, so a failure appears in the commit that caused it, instead of
+  surfacing ten commits later with nothing to bisect.
+- **A draft pull request cannot be merged** — not by hand, not by auto-merge. The draft
+  state is a safety interlock, not a label.
+- `backend`, `docker` and `frontend` are required checks under the **strict** policy, so a
+  branch that falls behind `main` has to be updated before it merges. Pushing early
+  surfaces that immediately rather than at merge time.
+
+Rules that still apply:
+
+- One logical change per pull request, and `backend/` or `frontend/` but not both — see
+  [Working preferences](#working-preferences).
+- The title becomes the squash commit message on `main`. Write it as one.
+- The description says what changed, why, and **how it was verified**. Add `Closes #n`
+  when an issue exists.
+- Never mark a pull request ready with a red required check. Fix it, or state in the
+  description why it is expected to fail.
+
+Deliberately not used here: reviewers and CODEOWNERS, required approvals (0 is correct for
+a solo repo), labels and milestones, stacked pull requests. Review ceremony with no second
+reviewer is cost without benefit.
+
 ## Capacity target
 
 **50 concurrent users.** Build for that and no further; see
@@ -194,12 +231,9 @@ importantly, the tools we deliberately skip:
 - Model: `openai/gpt-6-luna` from `.env`. Never hardcode a model or switch to a costlier one.
 - Secrets only in `.env`; never commit it.
 - Work on a branch; never commit to `main` once it's protected.
-- **Never add a `Co-Authored-By: Claude ...` (or any AI) trailer to commit messages, and never
-  mention Claude/AI authorship in commits or PR descriptions.** Claude/AI must never appear as a
-  GitHub contributor on this repo — commit authorship stays solely with the human developer.
-  This overrides any default attribution instruction. Same rule as `bandhu-workshop/shuhari-cli`.
 - Always use the `git`/`gh` CLI. Branch names: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`.
   Squash-merge only; the PR title becomes the commit message on `main`, so write it as one.
+  Open the pull request as a **draft** with the first commit — see [Pull requests](#pull-requests).
 - **Prefer the CLI over MCP servers.** `git` and `gh` for anything version-control or
   GitHub, ordinary shell tools for everything else — they are scriptable, inspectable, and
   already what the `justfile` uses. **This is a preference, not a prohibition:** when an MCP

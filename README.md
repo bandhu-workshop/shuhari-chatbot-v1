@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 12:44 IST
+> **Last updated:** 2026-11-26 16:31 IST
 
 A Claude/ChatGPT-style chatbot agent built on Google ADK, as a learning project: every component of a modern assistant (agent loop, streaming, sessions, tools, memory, research, evals) is built in small end-to-end milestones, traced in Phoenix and measured with evals.
 
@@ -99,9 +99,11 @@ Rules: keep the defaults on the cheapest model; try a bigger model only by chang
 
 ```bash
 just branch feat/session-store   # fresh branch from main
-just check                       # before pushing
-just pr                          # push + open PR
-just merge                       # squash-merges when CI is green
+# ... first commit ...
+just draft                       # push + open a DRAFT PR, assigned to you
+just check                       # before each push
+just push                        # push + watch this branch's CI
+just ready                       # mark ready; squash-merges when CI is green
 just sync                        # back on updated main
 ```
 

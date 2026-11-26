@@ -46,7 +46,7 @@ jobs:
       - name: Types (mypy)
         run: uv run mypy src
       - name: Unit tests (pytest)
-        run: uv run pytest -m "not integration"
+        run: uv run pytest -m "not integration" --cov --cov-report=term-missing
 
   integration:
     name: integration
@@ -127,6 +127,18 @@ jobs:
           push: false
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+  dependency-review:
+    name: dependency-review
+    # pull_request only: the action diffs the base branch's dependencies against the
+    # head's, so there is nothing for it to compare on a push.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
 
   publish:
     name: publish

@@ -1,0 +1,49 @@
+# Deep static analysis: taint tracking and dataflow, which ruff cannot do.
+#
+# Deliberately a SEPARATE workflow and NOT a required check. CodeQL takes 1-3 minutes
+# while the gating pipeline in ci.yml finishes in about 35 seconds, and gating a fast
+# pipeline on a slow scan defeats the point of the fast pipeline. Findings land in the
+# repository's Security tab instead of blocking a merge.
+#
+# Free for public repositories. See docs/decisions/0004-verification-layers.md.
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Mondays, off-peak. Catches advisories published after a PR merged.
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # Default query suite, not security-extended: extended roughly doubles the
+          # runtime for findings that matter mostly in large codebases. Revisit if the
+          # default suite stops finding anything.
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
