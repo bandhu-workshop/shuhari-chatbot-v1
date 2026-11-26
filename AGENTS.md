@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 13:31 IST
+> **Last updated:** 2026-11-26 13:44 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
@@ -25,10 +25,34 @@ evals, security, CI/CD, deployment). Only build what the current step or milesto
   > **Last updated:** 2026-11-26 12:44 IST
   ```
   Without it there is no way to tell which of two documents is current.
-- Files and folders: lowercase, hyphenated, ISO date first, underscore after the date —
-  `2026-11-26_description`.
+- File and folder naming: see [Naming](#naming) below.
 - ADRs in `docs/decisions/NNNN-slug.md`, numbered in decision order.
 - `docs/` is tracked and reviewed. `localdev/` is gitignored scratch space.
+
+## Naming
+
+Lowercase everywhere. The date prefix applies to **dated working documents** only —
+things that are a snapshot of one moment. It deliberately does not apply to code, to
+tool-fixed filenames, or to living documents.
+
+| Kind | Convention | Example |
+| --- | --- | --- |
+| Dated working documents — feature notes, debug notes, planning docs | `YYYY-MM-DD_name-in-kebab-case` | `2026-11-26_hello-agent/`, `2026-11-26_sse-reconnect.md` |
+| Living documents — revised continuously, never a snapshot | `kebab-case.md`, **no date** | `blueprint.md`, `tracker.md`, `repo-branch-protection.md` |
+| ADRs | `NNNN-kebab-case.md`, numbered by decision order | `0002-one-database-url.md` |
+| Python modules and packages | `snake_case`, ruff/PEP 8 | `core/config.py`, `ai/observability/tracing.py` |
+| Frontend files | `kebab-case.tsx` / `.ts` | `message-list.tsx`, `use-chat.ts` |
+| Tool-fixed names | exactly what the tool requires | `pyproject.toml`, `Dockerfile`, `justfile`, `__init__.py`, `AGENTS.md` |
+
+Why the date prefix is scoped this way:
+
+- A date prefix on a living document claims it is a snapshot of that day, and is wrong by
+  the next edit. Sequence for those comes from the `Last updated` stamp and git history.
+- Python cannot import a module whose name starts with a digit or contains a hyphen, so
+  `2026-11-26-config.py` is unusable.
+- ADRs are ordered by *decision*, not by calendar. `0001` before `0002` is the point.
+- The underscore after the date marks where the date ends, so the boundary stays visible.
+  Matches the global convention in `~/.claude/CLAUDE.md`.
 
 ## Feature working notes
 Per-feature design discussions, brainstorming and plans live in

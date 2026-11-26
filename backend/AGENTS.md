@@ -1,6 +1,6 @@
 # backend
 
-> **Last updated:** 2026-11-26 13:31 IST
+> **Last updated:** 2026-11-26 13:44 IST
 
 Python 3.12, uv (`.venv` lives here, next to `pyproject.toml` and `uv.lock`). Google ADK for agents, FastAPI for the API.
 Run commands from the repo root with `just`, or from this folder with `uv run ...`.
@@ -167,6 +167,9 @@ MEM0_CONFIG = {
 
 ## Conventions
 - Type hints everywhere; ruff + mypy clean. Async for I/O.
+- Naming is ruff/PEP 8: `snake_case` modules and packages, `PascalCase` classes,
+  `snake_case` functions and variables, `UPPER_SNAKE` constants. No date prefixes and no
+  hyphens in anything importable — see [Naming](../AGENTS.md#naming).
 - Tools return dicts with a `status` key; return errors, don't raise.
 - Prompts in `ai/prompts/<agent>.md`, loaded at runtime — never inline in code.
 - DB access with SQLModel `select()` through `db/`; no raw SQL in routes. Routes get a session from `api/deps.py`, never by building an engine.
