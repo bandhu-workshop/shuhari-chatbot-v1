@@ -35,6 +35,10 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --frozen
+      - name: Lockfile matches pyproject.toml
+        # --frozen uses uv.lock as-is and would not notice a drifted pyproject.toml.
+        # Dependabot's uv ecosystem can rewrite lower bounds; this is what catches it.
+        run: uv lock --check
       - name: Lint (ruff)
         run: uv run ruff check .
       - name: Format (ruff)

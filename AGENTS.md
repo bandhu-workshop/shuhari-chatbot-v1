@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 13:44 IST
+> **Last updated:** 2026-11-26 14:52 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
@@ -126,6 +126,68 @@ PR it was given.
   every doc that contradicts it in the same PR — the blueprint included. The latest
   agreed decision wins over the blueprint, always.
 
+## Coding style
+
+Applies to every change in this repo.
+
+- **Don't over-engineer.** Simple, readable and reliable beats clever. No abstraction
+  before the second real use.
+- **Never assume.** When something is genuinely ambiguous, ask — but only what is
+  necessary, and batch the questions into one round rather than a drip. Where an
+  assumption is unavoidable, **state it explicitly** in the PR description and in a
+  comment next to the code that depends on it.
+- **TDD for deterministic code.** The failing test comes first, then the implementation.
+  Cover the happy path, the edge cases and the genuinely hard cases — then stop. No test
+  explosion: a test that cannot fail for a real reason is maintenance without signal.
+- **Follow the patterns already here.** Read the surrounding code before adding to it.
+  Consistency with this codebase outranks personal preference, and outranks what is
+  idiomatic somewhere else.
+- **Keep the diff minimal.** Prefer the smallest change that does the job. Not a rule to
+  follow off a cliff — when the right fix is bigger, make it and say why.
+- **AI code is evaluated, not unit-tested.** Prompts, instructions and agent behaviour are
+  non-deterministic; they are measured by `evals/`, which is its own job. Never write
+  assertions against model output. **But the deterministic parts of AI code — tools,
+  parsers, scoring functions, retry and fallback logic — do get unit tests.** That is what
+  makes the system reliable.
+- **Prefer a well-known library to writing it yourself**, when one genuinely solves the
+  problem. Vet it first: open source, not paid, actively maintained, no known
+  vulnerabilities, and no more surface area than we need. A new dependency needs a reason
+  in the commit message.
+
+## How we work
+
+Development goes through the **superpowers skills**, not ad hoc. For anything new — a
+feature, a refactor, infrastructure, even a plan with no code in it — the order is:
+
+| Stage | Skill |
+| --- | --- |
+| Before any design work | `superpowers:brainstorming` |
+| Turning the brief into steps | `superpowers:writing-plans` |
+| Implementing | `superpowers:test-driven-development`, then `executing-plans` or `subagent-driven-development` |
+| Something broke | `superpowers:systematic-debugging` — before proposing a fix |
+| Before claiming done | `superpowers:verification-before-completion` |
+| Before merging | `superpowers:requesting-code-review`, then `receiving-code-review` |
+| Finishing the branch | `superpowers:finishing-a-development-branch` |
+
+The output of `brainstorming` and `writing-plans` is saved into the feature folder under
+`localdev/features/` — that is what those folders are for. Don't leave it in the chat.
+
+Why this is a rule and not a preference: these skills carry exactly the steps that get
+skipped under momentum — writing the test first, verifying before claiming success, and
+not grading your own work.
+
+## Capacity target
+
+**50 concurrent users.** Build for that and no further; see
+[`docs/decisions/0003-capacity-target.md`](docs/decisions/0003-capacity-target.md), which
+is mostly a list of things we are deciding *not* to build.
+
+## Verification
+
+How we check our own work — static checks, tests, fuzzing, load — and, just as
+importantly, the tools we deliberately skip:
+[`docs/decisions/0004-verification-layers.md`](docs/decisions/0004-verification-layers.md).
+
 ## Rules
 - Keep code simple and readable. No extra layers or new frameworks.
 - Stack is fixed: Python 3.12 + uv, Google ADK, FastAPI, SQLModel + Alembic, Postgres + pgvector, mem0, Phoenix, React + Vite. Ask before adding anything else.
@@ -138,6 +200,12 @@ PR it was given.
   This overrides any default attribution instruction. Same rule as `bandhu-workshop/shuhari-cli`.
 - Always use the `git`/`gh` CLI. Branch names: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`.
   Squash-merge only; the PR title becomes the commit message on `main`, so write it as one.
+- **Prefer the CLI over MCP servers.** `git` and `gh` for anything version-control or
+  GitHub, ordinary shell tools for everything else — they are scriptable, inspectable, and
+  already what the `justfile` uses. **This is a preference, not a prohibition:** when an MCP
+  server is genuinely the better or the only tool for a job, use it and mention it in one
+  line. What to avoid is routing routine git, GitHub or file work through one merely because
+  it happens to be connected.
 - Small steps: show the plan for anything touching more than 3 files.
 - Edit `AGENTS.md`, never `CLAUDE.md` (it only contains `@AGENTS.md`).
 
