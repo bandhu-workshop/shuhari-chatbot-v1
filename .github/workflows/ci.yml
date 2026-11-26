@@ -72,11 +72,26 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --frozen
+      # Guarded at STEP level, not job level, deliberately: a skipped *job* would also
+      # skip `publish`, which lists this job in `needs`. A job that runs and has nothing
+      # to do keeps the dependency graph honest. Each guard clears itself the moment the
+      # file it looks for exists, so bootstrap 4c needs no edit here.
+      - name: Nothing to integration-test yet
+        if: hashFiles('backend/alembic.ini') == '' || hashFiles('backend/tests/integration/test_*.py') == ''
+        run: |
+          echo "Alembic and/or integration tests do not exist yet (bootstrap 4c)."
+          echo "alembic.ini:        ${{ hashFiles('backend/alembic.ini') != '' && 'present' || 'missing' }}"
+          echo "integration tests:  ${{ hashFiles('backend/tests/integration/test_*.py') != '' && 'present' || 'missing' }}"
       - name: Migrations apply cleanly on an empty database
+        if: hashFiles('backend/alembic.ini') != ''
         run: uv run alembic upgrade head
       - name: Models and migrations are in sync
+        if: hashFiles('backend/alembic.ini') != ''
         run: uv run alembic check
       - name: Integration tests (pytest)
+        # pytest exits 5 ("no tests collected") when the directory is empty, which is a
+        # failure, so this waits for the first real integration test.
+        if: hashFiles('backend/tests/integration/test_*.py') != ''
         run: uv run pytest -m integration
 
   frontend:
