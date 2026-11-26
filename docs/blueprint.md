@@ -1525,7 +1525,7 @@ Then point Claude Code at each AGENTS.md (one source of truth). Each `CLAUDE.md`
 for d in . backend frontend; do echo "@AGENTS.md" > "$d/CLAUDE.md"; done
 ````
 
-### 4. Dependencies and Alembic
+### 4. Dependencies and tooling
 
 ````bash
 cd backend
@@ -1533,7 +1533,6 @@ uv add "google-adk[db]" litellm asyncpg sqlmodel alembic \
        fastapi "uvicorn[standard]" pydantic-settings httpx \
        mem0ai ollama arize-phoenix-otel openinference-instrumentation-google-adk
 uv add --dev ruff mypy pytest pytest-asyncio
-uv run alembic init -t async alembic
 cd ..
 
 cd frontend
@@ -1545,13 +1544,26 @@ Then edit by hand:
 
 | File | Change |
 | --- | --- |
-| `backend/pyproject.toml` | Pin `google-adk` and `mem0ai` with `~=` to the installed minor version. Add `[tool.pytest.ini_options]` with `testpaths = ["tests"]` and `markers = ["integration: needs Postgres"]` |
-| `backend/alembic/env.py` | `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.database_url`, add the `include_object` filter from `backend/AGENTS.md` |
-| `backend/alembic/script.py.mako` | Add `import sqlmodel` |
+| `backend/pyproject.toml` | Pin `google-adk` and `mem0ai` with `~=` to the installed minor version. Add `[tool.ruff.lint]` selecting `E,F,I,UP,B,S` (`S` is flake8-bandit, which is why we install no separate `bandit`) with `S101` ignored under `tests/` and `evals/`, and `extend-exclude = ["*.md"]` so ruff does not reformat Python blocks inside docs. Add `[tool.mypy]` with `strict = true` and `ignore_missing_imports = true` — ADK, mem0 and Phoenix ship few stubs, so without it `mypy src` fails on imports alone. Add `[tool.pytest.ini_options]` with `testpaths = ["tests"]`, `markers = ["integration: needs Postgres"]`, `asyncio_mode = "auto"` and an explicit `asyncio_default_fixture_loop_scope` |
 | `frontend/package.json` | Add script `"test": "vitest"` |
 | `frontend/vite.config.ts` | Add the Tailwind plugin and `server.proxy: { "/api": "http://localhost:8000" }` |
 
-Then create the first migration (it only enables pgvector) once `core/config.py` and `models/` exist:
+**Alembic is deliberately not part of this step.** Its `env.py` has to import
+`shuhari.db.base` and `settings.database_url`, and neither exists until `core/config.py`
+(milestone 1a) and `db/base.py` (milestone 1c) are written — so `alembic init` here would
+produce a file that cannot be imported. Alembic is tracker step **4c**, after 1a:
+
+````bash
+cd backend
+uv run alembic init -t async alembic
+````
+
+| File | Change |
+| --- | --- |
+| `backend/alembic/env.py` | `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.database_url`, add the `include_object` filter from `backend/AGENTS.md` |
+| `backend/alembic/script.py.mako` | Add `import sqlmodel` |
+
+Then the first migration, which only enables pgvector:
 
 ````bash
 just up
@@ -1559,6 +1571,10 @@ just migration "enable pgvector"
 # in the generated file: op.execute("CREATE EXTENSION IF NOT EXISTS vector") in upgrade()
 just db-upgrade
 ````
+
+Each of 4a, 4b and 4c turns exactly one CI check green — `backend`, `frontend` and
+`integration` respectively — which is what the staged required-checks rollout (C3-C5)
+assumes.
 
 ### 5. Models, checks, first commit, CI, protection
 
