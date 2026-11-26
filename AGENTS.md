@@ -6,10 +6,40 @@ Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one smal
 - `README.md`: overview, commands, git flow
 - `docs/blueprint.md`: the plan (stack, milestones, bootstrap steps, file contents)
 - `docs/decisions/`: ADRs. `0001-deployment-strategy.md` sets the local-first/GCP-later phasing and the portability rules that milestones 1-3 must follow
+- **`docs/tracker.md`: where we are and what's next. Read it first, update it last.**
 - `docs/github-workflow/repo-branch-protection.md`: branch protection, merge rules, commit conventions
 
 ## Current stage
-Bootstrap (blueprint "Bootstrap" section). Only build what the current step or milestone needs.
+See [`docs/tracker.md`](docs/tracker.md) — it is the source of truth for current position,
+next action and every cross-cutting track (auth, authorization, migrations, observability,
+evals, security, CI/CD, deployment). Only build what the current step or milestone needs.
+
+## Docs conventions
+- **Every Markdown doc carries a `Last updated` stamp** directly under its H1, and it is
+  updated on every edit:
+  ```markdown
+  # Title
+
+  > **Last updated:** 2026-11-26 12:44 IST
+  ```
+  Without it there is no way to tell which of two documents is current.
+- Files and folders: lowercase, hyphenated, ISO date first, underscore after the date —
+  `2026-11-26_description`.
+- ADRs in `docs/decisions/NNNN-slug.md`, numbered in decision order.
+- `docs/` is tracked and reviewed. `localdev/` is gitignored scratch space.
+
+## Feature working notes
+Per-feature design discussions, brainstorming and plans live in
+`localdev/features/{backend,frontend,mix}/YYYY-MM-DD_feature-name/` — pick the folder by
+where the work lands, and put a spanning feature in `mix/`. Convention and a README
+template: [`localdev/features/README.md`](localdev/features/README.md).
+
+Because `localdev/` is gitignored, anything there that hardens into a real decision gets
+promoted to `docs/decisions/` as an ADR, or to the relevant `AGENTS.md` as a rule.
+
+## Keeping track
+When a step, milestone or track row changes state, update `docs/tracker.md` **in the same
+PR that caused the change**. A tracker that lags is worse than none.
 
 ## Rules
 - Keep code simple and readable. No extra layers or new frameworks.

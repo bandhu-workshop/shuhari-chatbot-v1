@@ -1,5 +1,7 @@
 # shuhari-chatbot-v1 — Blueprint
 
+> **Last updated:** 2026-11-26 12:44 IST
+
 A Claude/ChatGPT-style chatbot agent built on Google ADK. It is Project 1 of the Shuhari roadmap: learn every component of a modern assistant by building it, one working end-to-end slice at a time, with tracing and evals from the first slice.
 
 **Stack (open source):** Python 3.12 + uv · Google ADK (models via LiteLLM) · FastAPI · SQLModel + Alembic · React + TypeScript (Vite) · PostgreSQL + pgvector · mem0 · Ollama (embeddings) · Arize Phoenix (OpenTelemetry) · SearXNG · Docker · just · GitHub Actions

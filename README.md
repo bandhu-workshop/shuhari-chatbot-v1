@@ -1,5 +1,7 @@
 # shuhari-chatbot-v1
 
+> **Last updated:** 2026-11-26 12:44 IST
+
 A Claude/ChatGPT-style chatbot agent built on Google ADK, as a learning project: every component of a modern assistant (agent loop, streaming, sessions, tools, memory, research, evals) is built in small end-to-end milestones, traced in Phoenix and measured with evals.
 
 **Stack (open source):** Python 3.12 + uv · Google ADK (models via LiteLLM) · FastAPI · SQLModel + Alembic · React + TypeScript (Vite) · PostgreSQL + pgvector · mem0 · Ollama · Arize Phoenix · SearXNG · Docker · just · GitHub Actions
