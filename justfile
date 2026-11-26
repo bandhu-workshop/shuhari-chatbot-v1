@@ -128,7 +128,16 @@ merge:
 sync:
     git switch main && git pull --ff-only && git fetch --prune
 
-# one-time, AFTER CI is green on main: merge settings + main ruleset
+# apply merge settings + .github/rulesets/main.json; safe to re-run after editing the ruleset
 protect-main:
+    #!/usr/bin/env bash
+    set -euo pipefail
     gh repo edit --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false --delete-branch-on-merge --enable-auto-merge
-    gh api repos/{owner}/{repo}/rulesets --method POST --input .github/rulesets/main.json
+    id=$(gh api repos/{owner}/{repo}/rulesets --jq '.[] | select(.name=="protect-main") | .id' | head -1)
+    if [ -n "$id" ]; then
+      gh api repos/{owner}/{repo}/rulesets/"$id" --method PUT --input .github/rulesets/main.json >/dev/null
+      echo "updated ruleset $id"
+    else
+      gh api repos/{owner}/{repo}/rulesets --method POST --input .github/rulesets/main.json >/dev/null
+      echo "created ruleset"
+    fi

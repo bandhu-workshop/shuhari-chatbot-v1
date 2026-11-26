@@ -35,29 +35,55 @@ committed at `.github/rulesets/main.json`, so it is version-controlled and
 reviewable rather than living as GitHub UI state. Rulesets are free on public
 repositories.
 
-Applied once with `just protect-main`, which also sets the merge settings:
+Apply it with `just protect-main`, which also sets the merge settings. The recipe
+is **idempotent** — it creates the ruleset if absent and updates it in place
+otherwise — so re-run it after any edit to `main.json`:
 
 ```bash
 just protect-main
 ```
 
-The ruleset requires:
+**`main.json` always reflects what is live.** Do not list a rule there that is not
+applied; that drift is the thing the committed-config approach exists to prevent.
 
-- a pull request before merging, 0 required approvals, squash as the only
-  allowed merge method;
+### Currently enforced
+
+- a pull request before merging, 0 required approvals, squash as the only allowed
+  merge method;
 - conversation resolution before merging;
-- the four CI checks `backend`, `integration`, `frontend` and `docker`, strict
-  (the branch must be up to date with `main` before merging);
 - linear history;
 - no force pushes (`non_fast_forward`) and no branch deletion.
 
-### Ordering
+There are no bypass actors, so the rules apply to the repository admin too. All
+changes to `main`, including your own, go through a pull request.
 
-`just protect-main` must run **after** CI is green on `main`. The four required
-checks cannot pass until bootstrap steps 4–5 and milestone 1 exist (there is no
-`uv.lock`, no source and no tests before then), and a ruleset naming checks that
-never report would block every merge. The bootstrap commit is therefore pushed to
-an unprotected `main`, with CI red, and protection is applied later.
+### Staged rollout of the required CI checks
+
+The four CI checks are **not yet required**, because none can pass until there is a
+`uv.lock`, prettier and vitest installed, and at least one test in each place CI runs
+pytest or vitest (both fail on zero tests). Requiring a check that never reports
+blocks every merge.
+
+They get added to `main.json` incrementally, each in the same pull request that makes
+it pass, by appending to the `rules` array and re-running `just protect-main`:
+
+```json
+{
+  "type": "required_status_checks",
+  "parameters": {
+    "strict_required_status_checks_policy": true,
+    "required_status_checks": [
+      { "context": "backend" },
+      { "context": "integration" },
+      { "context": "frontend" },
+      { "context": "docker" }
+    ]
+  }
+}
+```
+
+The target end state is all four required and strict (the branch must be up to date
+with `main` before merging).
 
 ## Differences from `shuhari-cli`
 
