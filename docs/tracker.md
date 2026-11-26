@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 14:52 IST
+> **Last updated:** 2026-11-26 15:34 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -15,14 +15,16 @@ Status legend: `done` · `in progress` · `next` · `blocked` · `todo` · `n/a 
 ## Where we are right now
 
 **Bootstrap, step 4.** The repo is on GitHub, `main` is protected, the layered package
-skeleton is in place and all 19 layer packages import. `uv.lock` exists but holds only the
-project itself, because `dependencies = []`.
+skeleton is in place and all 19 layer packages import. Step 4a has landed: 142 packages
+resolved with no conflicts, ruff/mypy/pytest configured, and 22 unit tests passing.
 
-CI is red on all four checks: `backend` and `integration` have no dev deps and no tests,
-`frontend` has no prettier, `docker` builds but has nothing to run.
+CI: `backend` and `docker` green. `frontend` red (prettier has never run on the Vite
+scaffold — step 4b). `integration` red (no Alembic yet — step 4c, which has to wait for
+`core/config.py`).
 
-**Immediate next action:** bootstrap step 4 — backend dependencies + Alembic (one PR),
-then frontend dev dependencies (a second PR, per the frontend/backend separation rule).
+**Immediate next action:** step 4b, frontend dev dependencies and formatting — a separate
+PR per the frontend/backend separation rule. Then C3 can add `backend` + `docker` to the
+required checks.
 
 ---
 
@@ -35,9 +37,10 @@ then frontend dev dependencies (a second PR, per the frontend/backend separation
 | 3 | Add the specified files, create `.env` | **done** | 2026-11-26. Root `README.md`/`AGENTS.md` kept; `infra/searxng/settings.yml` deferred to milestone 4 |
 | 3b | GitHub remote, merge settings, protect `main` | **done** | 2026-11-26. Ruleset active without CI checks; see CI/CD track |
 | 3c | Backend layered structure refactor | **done** | 2026-11-26. Adapted from creditforge; see backend/AGENTS.md → Layout |
-| 4a | Backend dependencies + `alembic init -t async` | **next** | Rewrites `uv.lock`; adds ruff/mypy/pytest. Unblocks `docker` |
-| 4b | Frontend dev deps: tailwind, vitest, prettier | todo | Separate PR. Unblocks `frontend` once a test exists |
-| 5 | First tests in each place CI runs pytest/vitest; `just check-all` green | todo | Both pytest and vitest fail on zero tests. Then tighten the ruleset (C3–C5) |
+| 4a | Backend dependencies, ruff/mypy/pytest config, first test | **done** | 2026-11-26. Turned `backend` green. No resolver conflicts. Alembic deliberately deferred to 4c — see below |
+| 4b | Frontend dev deps (tailwind, vitest, prettier), format the scaffold, `.prettierignore` | **next** | Separate PR. Turns `frontend` green. Also aligns Node to 26 and fixes the stale `Lint (eslint)` label |
+| 4c | `db/base.py`, `alembic init -t async`, `env.py` wiring, migration 0001 (`CREATE EXTENSION vector`), first integration test | todo | **Blocked on 1a.** `env.py` imports `shuhari.db.base` and `settings.database_url`, so it cannot be written before `core/config.py` exists. Turns `integration` green |
+| 5 | `just check-all` green, then tighten the ruleset (C3–C5) | todo | Each of 4a/4b/4c turns exactly one check green |
 
 ---
 
@@ -162,7 +165,7 @@ reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verific
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
-| V1 | Ruff `S` rules (flake8-bandit) enabled in `pyproject.toml` — replaces `bandit` | Bootstrap 4a | todo |
+| V1 | Ruff `S` rules (flake8-bandit) enabled in `pyproject.toml` — replaces `bandit` | Bootstrap 4a | **done** | 
 | V2 | Confirm GitHub secret scanning + push protection are on (free, public repo) — replaces `gitleaks`. Dependabot already configured | Bootstrap 4a | todo |
 | V3 | The three auth tests: route-has-identity-dependency, cross-user isolation, no mass assignment | Milestone 1c, extended at 3 and 5 | todo — rows Z1, Z4 |
 | V4 | Schemathesis against our own `openapi.json` | Milestone 2 | todo |
@@ -179,7 +182,7 @@ runs on every auth diff at no setup cost.
 | --- | --- | --- | --- |
 | C1 | `ci.yml` with backend / integration / frontend / docker + publish | Bootstrap 3 | **done** |
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
-| C3 | Add `backend` + `docker` to required checks | Bootstrap 4 | todo |
+| C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **next** — both are green |
 | C8 | `uv lock --check` in the `backend` job — `--frozen` alone misses a drifted `pyproject.toml` | Bootstrap 4 | **done** |
 | C4 | Add `frontend` to required checks | Bootstrap 5 | todo |
 | C5 | Add `integration` to required checks | Bootstrap 5 | todo |
@@ -209,7 +212,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | B2 | `core/config.py`, `core/logging.py`, `core/exceptions.py` | Milestone 1 | todo |
 | B3 | `main.py` factory + `api/health.py` + `api/deps.py` | Milestone 1 | todo |
 | B4 | `db/base.py` + `db/session.py` | Milestone 1 | todo |
-| B5 | `tests/unit/test_package_structure.py` enforcing the layout | Bootstrap 4 | todo |
+| B5 | `tests/unit/test_package_structure.py` enforcing the layout | Bootstrap 4a | **done** | 
 | B6 | `services/` layer added when session CRUD needs a home | Milestone 3 | todo |
 | B7 | Check ADK issues [#4366](https://github.com/google/adk-python/issues/4366) and [#7276](https://github.com/google/adk-python/issues/7276) (asyncpg + Postgres bugs) before wiring sessions | Milestone 3 | todo |
 
@@ -235,7 +238,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | Q2 | mem0 `history_db_path`: keep SQLite or move to Postgres? | 2026-11-26 | Milestone 5 |
 | Q3 | Should `localdev/features/` be tracked in git instead of ignored? | 2026-11-26 | No — reversible with `git mv` |
 | Q4 | Add SPDX headers + `CITATION.cff` like creditforge and shuhari-cli? | 2026-11-26 | No |
-| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md`, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | No — but it has already caused stale text twice (PR #6 and the ADR-0002 PR). Each structural change must be made in two places |
+| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md` at lines 553-735, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | **Recommend yes.** Now caused stale text three times (PR #6, the ADR-0002 PR, and PR #13 — whose Capacity, TDD, ruff-`S` and auth-test additions are all missing from the embedded copy). Three strikes with a known, repeating cost |
 
 ---
 
