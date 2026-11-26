@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 18:58 IST
+> **Last updated:** 2026-11-26 19:20 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -286,4 +286,5 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Stamp currency is enforced mechanically, not by a human checklist: a doc's content and its stamp must change together | [../scripts/docs_audit.py](../scripts/docs_audit.py) |
 | 2026-11-26 | With squash merges a commit trailer goes on one commit or in the PR body, never on every commit | [../AGENTS.md](../AGENTS.md#rules) |
 | 2026-11-26 | One workflow per area (Backend / Frontend / Images / PR / CodeQL), reversing the earlier one-workflow rule: the split costs nothing and names the thing that broke | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision: workflow split |
+| 2026-11-26 | PR titles and bodies are short and pointwise (What / Why / Verified / Deferred, ≤ 15 lines). Reasoning longer than a line goes to an ADR, not the body | [../AGENTS.md](../AGENTS.md#writing-the-title-and-body) |
 | 2026-11-26 | Labels live in `.github/labels.yml` under version control, synced declaratively. `type:`/`priority:`/`status:`/`component:` stay out, each with a named trigger that would change that | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |
