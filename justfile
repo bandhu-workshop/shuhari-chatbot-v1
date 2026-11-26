@@ -71,8 +71,12 @@ fmt:
     cd backend && uv run ruff format . && uv run ruff check --fix .
     cd frontend && npx prettier --write .
 
-# fast local check before every commit: lint + unit tests
-check: lint test
+# mechanical documentation checks: stamps present, links resolve
+docs-audit:
+    python3 scripts/docs_audit.py
+
+# fast local check before every commit: docs + lint + unit tests
+check: docs-audit lint test
 
 # everything CI runs: lint, unit, migrations check, integration, frontend build, docker builds
 check-all: check test-integration

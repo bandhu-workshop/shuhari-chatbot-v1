@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 13:31 IST
+> **Last updated:** 2026-11-26 13:44 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -14,11 +14,15 @@ Status legend: `done` · `in progress` · `next` · `blocked` · `todo` · `n/a 
 
 ## Where we are right now
 
-**Bootstrap, step 4.** The repo exists on GitHub, `main` is protected, and the
-scaffolding is committed. Nothing runs yet: there is no `uv.lock`, no source beyond
-the uv stub, and no tests, so all four CI checks fail.
+**Bootstrap, step 4.** The repo is on GitHub, `main` is protected, the layered package
+skeleton is in place and all 19 layer packages import. `uv.lock` exists but holds only the
+project itself, because `dependencies = []`.
 
-**Immediate next action:** bootstrap step 4 — install dependencies and set up Alembic.
+CI is red on all four checks: `backend` and `integration` have no dev deps and no tests,
+`frontend` has no prettier, `docker` builds but has nothing to run.
+
+**Immediate next action:** bootstrap step 4 — backend dependencies + Alembic (one PR),
+then frontend dev dependencies (a second PR, per the frontend/backend separation rule).
 
 ---
 
@@ -27,12 +31,13 @@ the uv stub, and no tests, so all four CI checks fail.
 | Step | What | Status | Notes |
 | --- | --- | --- | --- |
 | 1 | Repo and folders | **done** | 2026-11-26 |
-| 2 | Scaffold backend (uv) and frontend (Vite react-ts) | **done** | 2026-11-26. Vite 9 shipped oxlint, not ESLint — unresolved, see Open questions |
+| 2 | Scaffold backend (uv) and frontend (Vite react-ts) | **done** | 2026-11-26. Vite 9 shipped oxlint; kept, see decisions log |
 | 3 | Add the specified files, create `.env` | **done** | 2026-11-26. Root `README.md`/`AGENTS.md` kept; `infra/searxng/settings.yml` deferred to milestone 4 |
 | 3b | GitHub remote, merge settings, protect `main` | **done** | 2026-11-26. Ruleset active without CI checks; see CI/CD track |
 | 3c | Backend layered structure refactor | **done** | 2026-11-26. Adapted from creditforge; see backend/AGENTS.md → Layout |
-| 4 | Dependencies + Alembic init | **next** | Creates `uv.lock`; installs prettier + vitest. Unblocks 3 of 4 CI checks |
-| 5 | Models, `just check-all` green, first CI green | todo | Needs one test in each place CI runs pytest/vitest |
+| 4a | Backend dependencies + `alembic init -t async` | **next** | Rewrites `uv.lock`; adds ruff/mypy/pytest. Unblocks `docker` |
+| 4b | Frontend dev deps: tailwind, vitest, prettier | todo | Separate PR. Unblocks `frontend` once a test exists |
+| 5 | First tests in each place CI runs pytest/vitest; `just check-all` green | todo | Both pytest and vitest fail on zero tests. Then tighten the ruleset (C3–C5) |
 
 ---
 
@@ -48,6 +53,28 @@ the uv stub, and no tests, so all four CI checks fail.
 | 5 | Memory (mem0 + pgvector) | todo | Recall ≥ 80% on 30 planted facts; outdated/wrong/deleted cases pass |
 | 6 | Research + MCP | todo | Cited answers on 10 questions, ≥ 85% of claims supported |
 | 7 | Evaluate and improve | todo | Measured gain on ≥ 2 datasets vs baseline, no regressions |
+
+---
+
+## Milestone 1 — "Hello agent", broken into features
+
+One PR per row, in this order. All backend; no frontend work in milestone 1 at all.
+Each gets a folder under `localdev/features/backend/YYYY-MM-DD_<name>/`.
+
+| # | Feature | What lands | Tracker rows | Depends on |
+| --- | --- | --- | --- | --- |
+| 1a | **config** | `core/config.py`: `POSTGRES_*` → one `database_url`, model ids, service URLs, `DATABASE_URL` override, `.env` optional. Unit tests. | B2, deployment P0 | step 4a |
+| 1b | **logging** | `core/logging.py`: JSON to stdout, `session_id`/`user_id` in context. Unit tests. | B2, O2 | 1a |
+| 1c | **app skeleton** | `main.py` `create_app()`, `core/exceptions.py`, `api/health.py` (`/healthz`, `/readyz`), `api/deps.py` (`DbSession` + `get_current_user()`), `db/base.py`, `db/session.py`, SIGTERM lifespan. Unit tests. | B3, B4, A1, A2 | 1a, 1b |
+| 1d | **the agent** | `ai/agents/chatbot/agent.py` exporting `root_agent` via `LiteLlm(settings.chat_model)`, `ai/prompts/chatbot.md`. Runnable with `just adk`. | milestone 1 core | 1a |
+| 1e | **tracing** | `ai/observability/tracing.py`: OTEL + OpenInference → Phoenix, no-op when `PHOENIX_COLLECTOR_ENDPOINT` unset. | O1 | 1d |
+| 1f | **evals** | `ai/evaluation/` scoring + graders, `evals/datasets/chat.jsonl` (10 cases), `evals/run.py`, `baseline.json`. Runs 3×. | E1 | 1d, 1e |
+
+Milestone 1 is done when a question produces an answer, a trace appears in Phoenix, and
+`just eval chat` scores it against a saved baseline.
+
+Note `db/` lands in 1c only because `/readyz` checks the database. No tables exist until
+milestone 3 — the first migration (`CREATE EXTENSION vector`) comes in step 4a.
 
 ---
 
