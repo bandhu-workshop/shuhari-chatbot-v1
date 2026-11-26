@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 15:48 IST
+> **Last updated:** 2026-11-26 16:02 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -21,9 +21,11 @@ resolved with no conflicts, ruff/mypy/pytest configured, and 22 unit tests passi
 CI: `backend`, `docker` and `frontend` green. `integration` red (no Alembic yet — step
 4c, which has to wait for `core/config.py`).
 
-**Immediate next action:** C3 + C4 — add `backend`, `docker` and `frontend` to the required
-checks and re-run `just protect-main`. Then milestone 1a (`core/config.py`), which unblocks
-4c and with it the `integration` check.
+`backend`, `docker` and `frontend` are now **required** checks on `main`, strict policy.
+`integration` is not, because it cannot pass until 4c.
+
+**Immediate next action:** milestone 1a — `core/config.py`. It unblocks 4c (Alembic), which
+turns `integration` green and completes the required-checks rollout at C5.
 
 ---
 
@@ -181,10 +183,10 @@ runs on every auth diff at no setup cost.
 | --- | --- | --- | --- |
 | C1 | `ci.yml` with backend / integration / frontend / docker + publish | Bootstrap 3 | **done** |
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
-| C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **next** — both are green |
+| C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **done** | 
 | C8 | `uv lock --check` in the `backend` job — `--frozen` alone misses a drifted `pyproject.toml` | Bootstrap 4 | **done** |
-| C4 | Add `frontend` to required checks | Bootstrap 4b | **next** — green |
-| C5 | Add `integration` to required checks | Bootstrap 5 | todo |
+| C4 | Add `frontend` to required checks | Bootstrap 4b | **done** — strict policy on, so branches must be up to date | 
+| C5 | Add `integration` to required checks | After 4c | todo — the last one; then all four are required and strict |
 | C6 | Images published to GHCR on main | Bootstrap 5 | todo — job exists, gated on the four checks |
 | C7 | Deploy job | Deployment phase 3 | todo — placeholder comment in `ci.yml` |
 
