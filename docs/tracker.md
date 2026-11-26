@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 16:31 IST
+> **Last updated:** 2026-11-26 17:15 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -173,6 +173,8 @@ reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verific
 | V12 | `pip-audit` as a ~5s step in the `backend` job | **decide** | **Recommended.** V9's failure removed the pre-merge dependency gate, which was the stated reason for skipping `pip-audit`. Dependabot alerts only fire post-merge. Portable, no GitHub dependency |
 | V10 | `pytest-cov` wired, no global `fail_under`; 95% target applies to the auth module only | Bootstrap 4b | **done** | 
 | V11 | `pip-licenses` as a monthly scheduled job | if this is ever redistributed | todo — deferred, not a PR gate |
+| V13 | Playwright **MCP** server for agentic browser verification at feature completion | 2026-11-26 | **done** — `.mcp.json`; see [../AGENTS.md](../AGENTS.md#browser-verification-playwright-mcp) |
+| V14 | Scripted Playwright E2E suite, on demand via the `run:e2e` label | Milestone 2 | todo — row F8 |
 | V3 | The three auth tests: route-has-identity-dependency, cross-user isolation, no mass assignment | Milestone 1c, extended at 3 and 5 | todo — rows Z1, Z4 |
 | V4 | Schemathesis against our own `openapi.json` | Milestone 2 | todo |
 | V5 | Locust: one scenario, 50 users, p95/p99 recorded | After milestone 2 | todo — target per [ADR 0003](decisions/0003-capacity-target.md) |
@@ -233,6 +235,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | F5 | Tool-call cards | Milestone 4 | todo |
 | F6 | Memory view/edit/delete | Milestone 5 | todo |
 | F7 | `just types` generating `api-types.ts` from OpenAPI | Milestone 2 | todo |
+| F8 | Scripted Playwright suite in `frontend/tests/e2e/`, `just e2e`, and an on-demand workflow triggered by the `run:e2e` label | Milestone 2 | todo — deliberately deferred; there is no UI to test until then. The Playwright **MCP** server is already set up for agentic verification |
 
 ---
 
@@ -268,3 +271,5 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | The rule forbidding a `Co-Authored-By: Claude` trailer is **withdrawn**; tooling default attribution applies | [../AGENTS.md](../AGENTS.md#rules) |
 | 2026-11-26 | CI additions: CodeQL (not gating), Dependency Review, `pytest-cov`. `bandit`, `gitleaks` and `pip-audit` skipped again as duplicates | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision |
 | 2026-11-26 | Gating CI keeps a ~35s budget; one workflow with parallel jobs, a second workflow only when the trigger differs | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Speed |
+| 2026-11-26 | Playwright **MCP** for agentic browser verification at feature completion; scripted E2E deferred to milestone 2 and gated on the `run:e2e` label, never every PR | [../AGENTS.md](../AGENTS.md#browser-verification-playwright-mcp) |
+| 2026-11-26 | Labels: 4 automatic `area:*` from paths + 3 manual controls (`run:e2e`, `needs:decision`, `blocked`). `type:*` deferred to the first release, `priority:*` not used. Every PR gets labelled | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |

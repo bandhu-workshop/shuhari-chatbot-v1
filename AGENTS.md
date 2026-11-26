@@ -208,6 +208,12 @@ Rules that still apply:
   when an issue exists.
 - Never mark a pull request ready with a red required check. Fix it, or state in the
   description why it is expected to fail.
+- **Label every pull request.** `area:*` labels are applied automatically from the changed
+  paths, so in practice this means the three manual ones when they apply: `run:e2e`,
+  `needs:decision`, `blocked`. Scheme and reasoning:
+  [`docs/github-workflow/repo-branch-protection.md`](docs/github-workflow/repo-branch-protection.md#labels).
+- When a feature is finished and its tests pass, verify it in a browser before marking
+  ready — see [Browser verification](#browser-verification-playwright-mcp).
 
 Deliberately not used here: reviewers and CODEOWNERS, required approvals (0 is correct for
 a solo repo), labels and milestones, stacked pull requests. Review ceremony with no second
@@ -224,6 +230,45 @@ is mostly a list of things we are deciding *not* to build.
 How we check our own work — static checks, tests, fuzzing, load — and, just as
 importantly, the tools we deliberately skip:
 [`docs/decisions/0004-verification-layers.md`](docs/decisions/0004-verification-layers.md).
+
+## Browser verification (Playwright MCP)
+
+`.mcp.json` commits a project-scope `playwright` MCP server. It drives a real browser —
+navigate, click, fill, screenshot, read console and network logs — so a feature can be
+checked *running*, not merely read.
+
+**When to use it:** when a feature is complete and its tests pass, verify it end to end
+through the UI before marking the pull request ready. Also any time something needs to be
+*observed* running — "the stream renders blank", "the session does not resume". Mid-feature
+is fine where it helps. What it is not for is routine code changes: if nothing needs
+watching in a browser, do not open one.
+
+**How to use it:** start the app, navigate to the relevant URL, walk the path a user walks,
+then cross-reference what you saw against the matching log or trace and the code that owns
+that layer — so the fix lands in the right place (UI vs API vs agent vs DB).
+
+| Resource | Where |
+| --- | --- |
+| Frontend code | `frontend/src/` |
+| Frontend dev URL | `http://localhost:5173` — `just web`, or `just dev` for both halves |
+| Backend code | `backend/src/shuhari/` |
+| Backend URL | `http://localhost:8000` — `/healthz`, `/readyz`, `/api/v1/...` |
+| Prod-like stack | `http://localhost:8080` — `just stack`; nginx serves the built frontend and proxies `/api`. **Verify here before claiming a feature works**, because `just dev` hides the proxy and `$PORT` classes of bug |
+| Logs | JSON on stdout: `just logs backend`. Never a log file — see Portability in [`backend/AGENTS.md`](backend/AGENTS.md) |
+| Traces | Phoenix, `http://localhost:6006` |
+| Agent dev UI | `just adk` |
+| Postgres / SearXNG / Ollama | `localhost:5432` / `:8888` / `:11434` |
+
+Keep this table current as each piece becomes real; a stale resource table is worse than
+none.
+
+This is the one place an MCP server is **preferred** over the CLI (see [Rules](#rules)):
+there is no shell equivalent for driving a browser.
+
+**Scripted Playwright tests are a separate thing, arriving at milestone 2** with the first
+real UI, in `frontend/tests/e2e/`, triggered on demand by the `run:e2e` label and never on
+every pull request. The MCP server answers *"does this work?"*; a scripted suite answers
+*"did this stop working?"* — tracker row F8.
 
 ## Rules
 - Keep code simple and readable. No extra layers or new frameworks.

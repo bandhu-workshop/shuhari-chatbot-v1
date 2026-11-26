@@ -128,6 +128,23 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
+  label:
+    name: label
+    # pull_request only: nothing to label on a push to main. Kept in this workflow
+    # rather than its own because the trigger is the same -- see
+    # docs/decisions/0004-verification-layers.md -> Speed.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v7
+        with:
+          # Remove an area label again when the paths stop matching. Only touches
+          # labels defined in .github/labeler.yml, so manual labels are left alone.
+          sync-labels: true
+
   publish:
     name: publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
