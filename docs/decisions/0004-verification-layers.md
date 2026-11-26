@@ -1,6 +1,6 @@
 # 0004 — How we verify: the layers we use, and the ones we skip
 
-> **Last updated:** 2026-11-26 17:48 IST
+> **Last updated:** 2026-11-26 18:40 IST
 
 **Status:** accepted · **Date:** 2026-11-26 · **Revised:** 2026-11-26 (see Revision below)
 
@@ -111,10 +111,9 @@ CodeQL is decoupled on purpose: gating a 35-second pipeline on a 3-minute scan d
 point of the fast pipeline. Its findings go to the Security tab, and it also runs weekly so
 that an advisory published after a merge is still caught.
 
-One workflow with parallel jobs beats several workflows. Each extra workflow repeats
-checkout, toolchain setup and dependency install (~8-10s), while jobs *inside* one workflow
-already run in parallel — so splitting by topic costs overhead and buys nothing. A separate
-workflow is justified only when the **trigger** differs, which is why CodeQL is separate.
+~~One workflow with parallel jobs beats several workflows.~~ **Superseded — see
+"Workflow split" below.** The original argument counted only setup overhead and wall clock,
+and missed the axis that actually mattered.
 
 ## Revision — 2026-11-26
 
@@ -173,3 +172,52 @@ while Dependency Review was believed to cover this; that premise is now false.
 **Recommendation: add `pip-audit` as a ~5s step in the `backend` job.** Not done in this
 pull request, because the choice to skip it was explicit and reversing it silently would be
 wrong. Tracker row V12.
+
+## Revision — workflow split, 2026-11-26
+
+The pipeline is now four workflows: **Backend** (`backend`, `integration`), **Frontend**
+(`frontend`), **Images** (`docker`, `publish`), **PR** (`label`), plus **CodeQL**.
+
+This reverses the "one workflow with parallel jobs" rule above, which was wrong because it
+weighed the wrong thing. It counted setup overhead and wall clock — both real, and both
+irrelevant here: the jobs run in parallel, so wall clock does not move, and GitHub-hosted
+runners are free on public repositories, so duplicated setup costs nothing. What it never
+weighed is **diagnosability**: a failure notification saying "CI failed" tells you less than
+one saying "Backend failed", and when the point of the project is learning, the name of the
+thing that broke is part of the feedback.
+
+So the cost was zero and the benefit was real. The earlier rule optimised a budget that was
+not scarce.
+
+**Two things the split had to get right:**
+
+1. **A required status check matches the JOB name, not the workflow name.** Verified against
+   the live API before splitting: the contexts are `backend`, `docker`, `frontend` — no
+   workflow prefix. So moving a job to another file is safe, and *renaming* a job silently
+   un-protects `main`. Each workflow now carries that warning at the top.
+
+2. **`needs` cannot cross workflows.** `publish` used to depend on all four test jobs. That
+   gate is not lost, it moved: the ruleset on `main` requires `backend`, `docker` and
+   `frontend` green, requires a pull request, and blocks non-fast-forward pushes — so no
+   commit reaches `main` without them passing. The old `needs` was re-verifying the same
+   commit a second time. `publish` now depends only on `docker`, which builds the image it
+   pushes.
+
+**Each job also gained an `if: failure()` summary** writing the exact local command that
+reproduces it to `$GITHUB_STEP_SUMMARY` — `just check`, `just test-integration`,
+`docker compose --profile app build`. That is the real answer to "where do I look": not a
+tidier check list, but a failure that tells you what to run.
+
+**The rule that replaces the old one:** split a workflow when it makes a failure easier to
+locate, or when the trigger differs. Do not split to make a list look tidy, and do not merge
+to save setup time that is free and parallel.
+
+### Measured, for the record
+
+| | Wall clock | Billable |
+| --- | --- | --- |
+| Gating checks, all parallel | ~30s | **0s** |
+| CodeQL | 53-66s | **0s** |
+
+Public repositories get GitHub-hosted runners free, so the budget in the Speed section above
+is about attention, not money or minutes.

@@ -1,0 +1,26 @@
+# Pull-request hygiene. Nothing here gates a merge; it keeps the pull request tidy.
+name: PR
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: label
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v7
+        with:
+          # Remove an area label again when the paths stop matching. Only touches
+          # labels defined in .github/labeler.yml, so manual labels are left alone.
+          sync-labels: true
