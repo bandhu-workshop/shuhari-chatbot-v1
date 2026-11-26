@@ -1,6 +1,6 @@
 # GitHub workflow and branch protection
 
-> **Last updated:** 2026-11-26 12:44 IST
+> **Last updated:** 2026-11-26 13:17 IST
 
 Solo-developer workflow for this repository. The repo lives at
 `bandhu-workshop/shuhari-chatbot-v1` (public). Same conventions as
@@ -29,6 +29,22 @@ just pr                          # push + open a PR filled from commits
 just merge                       # squash-merge automatically once CI is green
 just sync                        # back to main
 ```
+
+## Scope of a pull request
+
+One concern per PR. Specifically:
+
+- **Frontend and backend changes stay in separate PRs** whenever possible. A PR touches
+  `backend/` or `frontend/`, not both. Repo-wide files (`justfile`, `compose.yaml`,
+  `docs/`, `.github/`) may travel with either, or alone.
+- When a backend change **forces** a frontend change — an API path, a schema, a response
+  shape — land the backend PR first, then a follow-up frontend PR that regenerates
+  `src/lib/api-types.ts` via `just types`. `main` is briefly ahead of the frontend, which
+  is fine: the frontend is pinned to the previous contract until its own PR lands, and the
+  generated types make the mismatch a build error rather than a runtime surprise.
+- Squash-merge means the PR title becomes the commit message on `main`, so a PR that
+  does two unrelated things produces one commit that describes neither. That is the real
+  cost of mixing scope here, not reviewer convenience.
 
 ## Protection for `main`
 

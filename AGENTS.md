@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 13:01 IST
+> **Last updated:** 2026-11-26 13:17 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
@@ -42,6 +42,21 @@ promoted to `docs/decisions/` as an ADR, or to the relevant `AGENTS.md` as a rul
 ## Keeping track
 When a step, milestone or track row changes state, update `docs/tracker.md` **in the same
 PR that caused the change**. A tracker that lags is worse than none.
+
+## Working preferences
+
+Stated once, expected to hold without being repeated. **Add to this list instead of
+asking again** — if a preference is given in conversation, it belongs here in the same
+PR it was given.
+
+- **Keep frontend and backend changes in separate PRs** whenever possible; separate
+  commits at the absolute minimum. A PR touches `backend/` or `frontend/`, not both.
+  Repo-wide files (`justfile`, `compose.yaml`, `docs/`, `.github/`) may travel with
+  either, or go alone. When a backend change *forces* a frontend change — an API path,
+  a schema, a contract — land the backend first, then the frontend in a follow-up PR
+  that regenerates `api-types.ts`. Don't bundle them to save a round trip.
+- **Never `git add -A` when the working tree holds unrelated changes.** Stage by path,
+  so a PR contains only what its message describes.
 
 ## Rules
 - Keep code simple and readable. No extra layers or new frameworks.
