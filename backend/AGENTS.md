@@ -1,44 +1,90 @@
 # backend
 
+> **Last updated:** 2026-11-26 13:01 IST
+
 Python 3.12, uv (`.venv` lives here, next to `pyproject.toml` and `uv.lock`). Google ADK for agents, FastAPI for the API.
 Run commands from the repo root with `just`, or from this folder with `uv run ...`.
 
 ## Layout
+
+Layered package, one job per layer. **Don't reach across layers** — a route goes
+through `api/deps.py` rather than pulling DB internals directly. Keep this tree
+updated as the project grows: one line per new file or folder, purpose only.
+
 ```
 pyproject.toml, uv.lock, .venv/
 alembic.ini
-alembic/               # migrations for OUR tables only (see Database ownership)
+alembic/                   # migrations for OUR tables only (see Database ownership)
 src/shuhari/
-  config.py            # pydantic-settings; reads ../.env; ALL model ids, providers and DB URLs live here
-  agents/
-    chatbot/           # ADK agent package: __init__.py + agent.py exporting `root_agent`, prompts.py
-    research/          # research orchestrator + sub-agents (milestone 6)
-  tools/               # one file per tool; plain typed functions with model-facing docstrings
-  mcp/                 # MCPToolset configs for external MCP servers (milestone 6)
-  memory/              # mem0 setup + ADK MemoryService wrapper (milestone 5)
-  sessions/            # ADK DatabaseSessionService setup
-  db/
-    models.py          # SQLModel tables (our tables only)
-    session.py         # engine + get_session()
-  api/
-    main.py            # FastAPI app; all routes under /api
-    routes/            # chat (SSE), sessions, memory, feedback
-    schemas.py         # request/response models: the frontend contract
-  observability/
-    tracing.py         # OpenTelemetry + OpenInference -> Phoenix (no-op when PHOENIX_COLLECTOR_ENDPOINT is unset)
+  main.py                  # create_app() factory + ASGI entry point; wiring only, no logic
+  core/                    # cross-cutting concerns
+    config.py              # pydantic-settings; ALL model ids, providers and DB URLs
+    logging.py             # setup_logging() — JSON to stdout
+    exceptions.py          # AppError hierarchy + FastAPI handlers
+  api/                     # HTTP layer
+    deps.py                # shared dependencies: DbSession, get_current_user()
+    health.py              # /healthz and /readyz — unversioned, NOT under /api
+    v1/
+      router.py            # aggregator that route modules attach to
+      routes/              # chat (SSE), sessions, memory, feedback
+  db/                      # async DB access
+    base.py                # SQLModel metadata — register new models here
+    session.py             # async engine + get_session()
+  models/                  # SQLModel table classes, one file per concept
+  schemas/                 # Pydantic request/response models: the frontend contract
+  ai/                      # everything agent-related (Google ADK)
+    agents/
+      chatbot/             # __init__.py + agent.py exporting `root_agent`
+      research/            # research orchestrator + sub-agents (milestone 6)
+    tools/                 # one file per tool; typed functions with model-facing docstrings
+    prompts/               # prompt templates, one file per agent (data, not code)
+    mcp/                   # MCPToolset configs for external MCP servers (milestone 6)
+    memory/                # mem0 setup + ADK MemoryService wrapper (milestone 5)
+    sessions/              # ADK DatabaseSessionService setup
+    observability/
+      tracing.py           # OpenTelemetry + OpenInference -> Phoenix
+    evaluation/            # eval scoring logic
+      graders/             # code checks + LLM-judge rubrics
 tests/
-  unit/                # no network, no DB; mock the model
-  integration/         # needs Postgres; @pytest.mark.integration
-evals/
-  datasets/            # JSONL golden sets: chat, tools, memory, research, security
-  graders/             # code checks + LLM-judge rubrics
-  baseline.json        # committed baseline scores + per-dataset tolerance
-  run.py               # runs datasets N times, scores, compares to baseline, logs a Phoenix experiment
-  results/             # gitignored
+  unit/                    # no network, no DB; mock the model. Mirrors src/shuhari/ 1:1
+  integration/             # needs Postgres; @pytest.mark.integration
+evals/                     # eval DATA and entry point (not importable code)
+  datasets/                # JSONL golden sets: chat, tools, memory, research, security
+  baseline.json            # committed baseline scores + per-dataset tolerance
+  run.py                   # CLI: runs datasets N times, compares to baseline, logs to Phoenix
+  results/                 # gitignored
 ```
 
+Notes that don't fit in a one-liner:
+
+- **`main.py` holds no logic of its own** — it only wires settings, logging, exception
+  handlers, routers and the lifespan (SIGTERM handling, engine disposal) together. A
+  `create_app()` factory rather than a module-level app, so tests can build their own.
+- **Code lives in `src/`, data lives outside it.** `ai/evaluation/` is importable,
+  typed, unit-tested scoring logic; `evals/` holds the JSONL datasets, the baseline and
+  the runner CLI. Datasets inside `src/` would be packaged into the wheel and the Docker
+  image, and `.dockerignore` deliberately excludes `evals` — evals must not ship to
+  production. Same reason `tests/` sits outside `src/`.
+- **`observability/` is under `ai/` on purpose.** `core/logging.py` handles application
+  logs; `ai/observability/tracing.py` handles LLM and agent spans via OpenInference.
+  Different concerns, different consumers.
+- **`schemas/` is separate from `models/`** so API contracts never leak DB column
+  structure. `schemas/` is what the frontend sees and what `just types` generates from.
+- **Register new SQLModel classes in `db/base.py`'s metadata**, or Alembic's autogenerate
+  won't see them.
+- **`health.py` is unversioned** and sits outside `/api` so Cloud Run's startup probe
+  never depends on an API version.
+- **No `services/` layer yet.** It arrives at milestone 3, when session list/rename/delete
+  needs a home that is neither a route nor agent code. Don't create it empty before then.
+- **Async runtime, sync Alembic.** Unlike `bandhu-workshop/creditforge`, this project
+  cannot be async-only: ADK needs asyncpg, Alembic needs a sync psycopg path, and mem0's
+  pgvector needs a plain URL. Three URLs from one source in `core/config.py`. This is
+  deliberate — don't "fix" it into a single async path.
+- `tests/unit/test_package_structure.py` imports every layer package, so this layout is
+  enforced rather than aspirational.
+
 ## Configuration
-- `config.py` is the only place that knows model ids, providers, keys and URLs. Agents, tools and memory read from `settings`; never hardcode a model name.
+- `core/config.py` is the only place that knows model ids, providers, keys and URLs. Agents, tools and memory read from `settings`; never hardcode a model name.
 - Models use the LiteLLM format `provider/model` (`CHAT_MODEL`, `MEMORY_LLM_MODEL`, `EVAL_JUDGE_MODEL`). Default for all three: `openai/gpt-6-luna`, OpenAI's cheapest model. Don't change the defaults to a costlier model.
 - ADK agents always get their model as `LiteLlm(model=settings.chat_model)`, so switching provider is a `.env` change, not a code change.
 - DB URLs are built from `POSTGRES_*` vars (one source):
@@ -52,11 +98,11 @@ One Postgres, three owners. Never manage another owner's tables.
 
 | Owner | Tables | Schema managed by |
 | --- | --- | --- |
-| Our app | everything in `db/models.py` (users, feedback, eval runs ...) | SQLModel + Alembic |
+| Our app | everything registered in `db/base.py` metadata, defined in `models/` (feedback, eval runs ...) | SQLModel + Alembic |
 | ADK sessions | ADK's session / event / state tables | ADK itself. On ADK upgrades read the release notes; use `adk migrate session` when ADK says the schema changed |
 | mem0 | the `mem0_memories` vector collection | mem0 itself |
 
-- `alembic/env.py`: `target_metadata = SQLModel.metadata`, import `shuhari.db.models`, URL from `settings.app_db_url`, and this filter so autogenerate never tries to drop ADK or mem0 tables:
+- `alembic/env.py`: `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.app_db_url`, and this filter so autogenerate never tries to drop ADK or mem0 tables:
   ```python
   def include_object(obj, name, type_, reflected, compare_to):
       # Only manage tables defined in our SQLModel metadata.
@@ -67,7 +113,7 @@ One Postgres, three owners. Never manage another owner's tables.
   Pass `include_object=include_object` to `context.configure(...)` in both offline and online modes.
 - `alembic/script.py.mako` includes `import sqlmodel`.
 - The first migration runs `CREATE EXTENSION IF NOT EXISTS vector`. Alembic is the only place that enables extensions.
-- Schema change flow: edit `db/models.py` → `just migration "msg"` → read the generated file → `just db-upgrade` → commit both. CI runs `alembic check` and fails if models and migrations differ.
+- Schema change flow: edit a table in `models/` (and register it in `db/base.py`) → `just migration "msg"` → read the generated file → `just db-upgrade` → commit both. CI runs `alembic check` and fails if models and migrations differ.
 - Never change the DB by hand or with `create_all()` outside tests.
 
 ## Memory (mem0)
@@ -114,9 +160,9 @@ MEM0_CONFIG = {
 ## Conventions
 - Type hints everywhere; ruff + mypy clean. Async for I/O.
 - Tools return dicts with a `status` key; return errors, don't raise.
-- Prompts in `prompts.py` next to the agent, not inline.
-- DB access with SQLModel `select()` through `db/`; no raw SQL in routes.
-- SSE event types are defined in `api/schemas.py`. All HTTP routes live under `/api`.
+- Prompts in `ai/prompts/<agent>.md`, loaded at runtime — never inline in code.
+- DB access with SQLModel `select()` through `db/`; no raw SQL in routes. Routes get a session from `api/deps.py`, never by building an engine.
+- SSE event types are defined in `schemas/`. Versioned HTTP routes live under `/api/v1`; only `/healthz` and `/readyz` sit outside it.
 - Service addresses (DB, Phoenix, SearXNG, Ollama) come from env vars only: localhost in `.env`, container names in `compose.yaml`.
 
 ## Portability (Cloud Run is the deployment target)
@@ -125,7 +171,7 @@ Decided in [docs/decisions/0001-deployment-strategy.md](../docs/decisions/0001-d
 Development is local-first; these rules are the things that are cheap now and expensive to
 retrofit. Follow them from milestone 1, even though nothing is deployed yet.
 
-- **Every DB URL is individually overridable.** `config.py` builds `app_db_url`, `adk_db_url`
+- **Every DB URL is individually overridable.** `core/config.py` builds `app_db_url`, `adk_db_url`
   and `mem0_db_url` from `POSTGRES_*`, but an explicit `APP_DB_URL` / `ADK_DB_URL` /
   `MEM0_DB_URL` env var wins when set. Cloud SQL's default connection path is a unix socket
   (`/cloudsql/<name>`), which does not fit host:port.
@@ -150,7 +196,7 @@ retrofit. Follow them from milestone 1, even though nothing is deployed yet.
   standalone command (`just db-upgrade` locally, a Cloud Run Job in production).
 - **DB pool size comes from an env var** with a small default. Every instance holds its own
   pool and Cloud SQL has a hard `max_connections` ceiling.
-- **One `get_current_user()` FastAPI dependency**, from the very first route. It returns a
+- **One `get_current_user()` FastAPI dependency in `api/deps.py`**, from the very first route. It returns a
   hardcoded dev user locally. Every route and every mem0 call takes `user_id` from it and never
   from a literal or a query parameter. Retrofitting identity would touch every route and test.
 - **No in-process state between requests** — no module-level caches, no in-memory session data.
