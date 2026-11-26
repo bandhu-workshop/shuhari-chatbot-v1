@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 19:20 IST
+> **Last updated:** 2026-11-26 19:58 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -161,6 +161,7 @@ Flow: edit a table in `models/` (register it in `db/base.py`) → `just migratio
 | S2 | Tool output treated as untrusted; injection case per new tool | Milestone 4+ | todo |
 | S3 | `security.jsonl` must-pass at 100% | Milestone 4 | todo |
 | S4 | Secrets from Secret Manager, not `.env` | Deployment phase 3 | todo |
+| S5 | Agent cannot modify any `AGENTS.md` — `permissions.deny` for the file-writing tools plus a `PreToolUse` Bash hook for shell writes | 2026-11-26 | **done** — `.claude/settings.json` + `.claude/hooks/protect-agents-md.py`, 15-case test suite. Reads stay allowed |
 
 ### Verification
 
@@ -177,6 +178,8 @@ reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verific
 | V12 | `pip-audit` as a ~5s step in the `backend` job | **decide** | **Recommended.** V9's failure removed the pre-merge dependency gate, which was the stated reason for skipping `pip-audit`. Dependabot alerts only fire post-merge. Portable, no GitHub dependency |
 | V10 | `pytest-cov` wired, no global `fail_under`; 95% target applies to the auth module only | Bootstrap 4b | **done** | 
 | V11 | `pip-licenses` as a monthly scheduled job | if this is ever redistributed | todo — deferred, not a PR gate |
+| V16 | Candidate rules staged in `localdev/AGENTS-delta.md` for human review before they reach `AGENTS.md` | ongoing | **in progress** — 12 entries, every one from a real mistake in this repo |
+| V17 | Trim `AGENTS.md`: 336 lines / ~4.7k tokens at root, ~10.8k across all three, loaded on every request. Move long procedures to `docs/`, add a numbered change workflow | **decide** | Proposed in `localdev/AGENTS-delta.md` C1-C2. Human-owned file, so human-applied |
 | V15 | `just docs-audit` check 4: a doc whose content changed must have its stamp changed in the same change | 2026-11-26 | **done** — found three genuinely stale stamps on its first run, and one more while this row was being written |
 | V13 | Playwright **MCP** server for agentic browser verification at feature completion | 2026-11-26 | **done** — `.mcp.json`; see [../AGENTS.md](../AGENTS.md#browser-verification-playwright-mcp) |
 | V14 | Scripted Playwright E2E suite, on demand via the `run:e2e` label | Milestone 2 | todo — row F8 |
@@ -286,5 +289,6 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Stamp currency is enforced mechanically, not by a human checklist: a doc's content and its stamp must change together | [../scripts/docs_audit.py](../scripts/docs_audit.py) |
 | 2026-11-26 | With squash merges a commit trailer goes on one commit or in the PR body, never on every commit | [../AGENTS.md](../AGENTS.md#rules) |
 | 2026-11-26 | One workflow per area (Backend / Frontend / Images / PR / CodeQL), reversing the earlier one-workflow rule: the split costs nothing and names the thing that broke | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision: workflow split |
+| 2026-11-26 | `AGENTS.md` files are human territory: the agent is denied write access by `.claude/settings.json` and a `PreToolUse` hook. Every other doc stays agent-editable. Candidate rules are staged in `localdev/AGENTS-delta.md` | [../.claude/settings.json](../.claude/settings.json) |
 | 2026-11-26 | PR titles and bodies are short and pointwise (What / Why / Verified / Deferred, ≤ 15 lines). Reasoning longer than a line goes to an ADR, not the body | [../AGENTS.md](../AGENTS.md#writing-the-title-and-body) |
 | 2026-11-26 | Labels live in `.github/labels.yml` under version control, synced declaratively. `type:`/`priority:`/`status:`/`component:` stay out, each with a named trigger that would change that | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |

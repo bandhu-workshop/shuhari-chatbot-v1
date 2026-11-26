@@ -1,6 +1,7 @@
 # local only
 localdev/
 .env
+.claude/settings.local.json
 
 # python
 backend/.venv/
