@@ -1,6 +1,6 @@
 # GitHub workflow and branch protection
 
-> **Last updated:** 2026-11-26 13:17 IST
+> **Last updated:** 2026-11-26 16:02 IST
 
 Solo-developer workflow for this repository. The repo lives at
 `bandhu-workshop/shuhari-chatbot-v1` (public). Same conventions as
@@ -77,31 +77,29 @@ changes to `main`, including your own, go through a pull request.
 
 ### Staged rollout of the required CI checks
 
-The four CI checks are **not yet required**, because none can pass until there is a
-`uv.lock`, prettier and vitest installed, and at least one test in each place CI runs
-pytest or vitest (both fail on zero tests). Requiring a check that never reports
-blocks every merge.
+Checks are added to `main.json` incrementally, each in the pull request that makes it
+pass, by appending to the `rules` array and re-running `just protect-main`. Requiring a
+check that can never report would block every merge, which is why they were all absent
+at first: none could pass before `uv.lock`, prettier and vitest existed, and before each
+place CI runs pytest or vitest had at least one test (both fail on zero tests).
 
-They get added to `main.json` incrementally, each in the same pull request that makes
-it pass, by appending to the `rules` array and re-running `just protect-main`:
+| Check | Required since | Made green by |
+| --- | --- | --- |
+| `backend` | 2026-11-26 | bootstrap 4a — deps, ruff/mypy/pytest config, first tests |
+| `docker` | 2026-11-26 | green from the start; the images build |
+| `frontend` | 2026-11-26 | bootstrap 4b — dev deps, formatting, first vitest test |
+| `integration` | **not yet** | needs bootstrap 4c (Alembic), which waits on `core/config.py` |
 
-```json
-{
-  "type": "required_status_checks",
-  "parameters": {
-    "strict_required_status_checks_policy": true,
-    "required_status_checks": [
-      { "context": "backend" },
-      { "context": "integration" },
-      { "context": "frontend" },
-      { "context": "docker" }
-    ]
-  }
-}
-```
+`strict_required_status_checks_policy` is `true`: a branch must be up to date with `main`
+before it merges. For sequential solo work that costs nothing, and it is what catches two
+pull requests that pass separately but break together.
 
-The target end state is all four required and strict (the branch must be up to date
-with `main` before merging).
+Adding `integration` is tracker row C5. When it lands, that is the end state: four
+required checks, strict.
+
+**Side effect worth knowing:** `just merge` (`gh pr merge --auto`) used to fail
+intermittently with exit 1, because `--auto` is rejected when there are no required checks
+to wait for. Now that there are, auto-merge works as intended.
 
 ## Why squash-only, not rebase
 
