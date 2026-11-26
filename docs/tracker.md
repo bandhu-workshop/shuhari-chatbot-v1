@@ -169,7 +169,8 @@ reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verific
 | V1 | Ruff `S` rules (flake8-bandit) enabled in `pyproject.toml` — replaces `bandit` | Bootstrap 4a | **done** | 
 | V2 | GitHub secret scanning + push protection + Dependabot security updates — replaces `gitleaks` | Bootstrap 4a | **done** — 2026-11-26. **They were off until now**, while [ADR 0004](decisions/0004-verification-layers.md) cited them as the reason to skip `gitleaks` |
 | V8 | CodeQL — separate workflow, PR + weekly, **not** a required check (1-3 min vs a ~35s gating pipeline) | Bootstrap 4b | **done** | 
-| V9 | GitHub Dependency Review — PR gate that refuses a dependency change carrying a high-severity advisory | Bootstrap 4b | **done** | 
+| V9 | ~~GitHub Dependency Review~~ | — | **cannot run here.** The dependency-graph REST API 404s on this repo (SBOM *and* compare endpoints), so the action fails `Forbidden`. Added and removed in the same PR |
+| V12 | `pip-audit` as a ~5s step in the `backend` job | **decide** | **Recommended.** V9's failure removed the pre-merge dependency gate, which was the stated reason for skipping `pip-audit`. Dependabot alerts only fire post-merge. Portable, no GitHub dependency |
 | V10 | `pytest-cov` wired, no global `fail_under`; 95% target applies to the auth module only | Bootstrap 4b | **done** | 
 | V11 | `pip-licenses` as a monthly scheduled job | if this is ever redistributed | todo — deferred, not a PR gate |
 | V3 | The three auth tests: route-has-identity-dependency, cross-user isolation, no mass assignment | Milestone 1c, extended at 3 and 5 | todo — rows Z1, Z4 |

@@ -29,7 +29,7 @@ doesn't quietly grow back.
 | **ruff's `S` rules** | `bandit` | Ruff *is* flake8-bandit under the `S` prefix — hardcoded secrets, weak hashing, `eval`, insecure random. Already a dependency, already in `just lint`. One tool, not two |
 | **GitHub Dependabot** | `pip-audit` | Already configured in `.github/dependabot.yml` for `uv`, `npm`, `github-actions` and `docker`. Free, monthly, grouped, and nothing to remember |
 | **GitHub secret scanning + push protection** | `gitleaks` | Free on public repositories, and push protection **rejects the push** rather than failing CI once the secret is already in remote history. Enabled 2026-11-26 — see Revision |
-| **GitHub Dependency Review** | part of what `pip-audit` would do | A pull-request gate that refuses a dependency change carrying a known high-severity advisory. Dependabot alerts tell you *after* the merge; this refuses the merge. Runs in seconds and needs nothing installed |
+| ~~GitHub Dependency Review~~ | — | **Attempted and removed 2026-11-26: it cannot run on this repository.** See Revision |
 | **CodeQL** | `semgrep` | Taint tracking and dataflow analysis, which ruff genuinely cannot do. Free on public repositories. **Not a required check** — see Speed below |
 | — | `semgrep` | **Skipped.** Its value here is its JWT and OWASP rulesets, and we issue no tokens (see below). Revisit only if that changes |
 
@@ -124,10 +124,11 @@ pip-audit, pip-licenses, gitleaks, bandit, Dependabot, CodeQL, Dependency Review
 **Added:** CodeQL, Dependency Review, `pytest-cov`. None had been considered in the first
 draft, and each does something nothing else here does.
 
-**Still skipped,** for the reasons already given: `bandit` (ruff's `S` *is* flake8-bandit —
-running both runs identical rules twice), `gitleaks` (GitHub secret scanning with push
-protection is strictly better), `pip-audit` (a third reader of the same OSV/PyPI advisory
-data that Dependabot alerts and Dependency Review already consume).
+**Still skipped:** `bandit` (ruff's `S` *is* flake8-bandit — running both runs identical
+rules twice) and `gitleaks` (GitHub secret scanning with push protection is strictly
+better). `pip-audit` was skipped on the grounds that Dependabot alerts and Dependency
+Review already read the same OSV/PyPI advisory data — **but see the Dependency Review
+finding below, which weakens half of that reasoning.**
 
 **Deferred:** `pip-licenses` — worth a monthly scheduled job if this is ever redistributed,
 but not a pull-request gate, and it needs translating for `uv`. Also Trivy, Grype, Syft,
@@ -149,3 +150,26 @@ public repository. Not pursued.
 **The lesson, worth more than the fix:** an ADR that swaps a tool for a platform feature has
 to verify the feature is enabled, in the same change. Otherwise the ADR reads as coverage
 while the gap is wide open.
+
+### Dependency Review: added, then removed the same day
+
+`actions/dependency-review-action@v5` was added as a pull-request gate and **failed
+`Forbidden` on its first run.** The cause is not permissions: the dependency-graph REST API
+is unavailable on this repository entirely — both
+`GET /repos/{owner}/{repo}/dependency-graph/sbom` and the `dependency-graph/compare/`
+endpoint return **404**, even though Dependabot alerts report as enabled. The same limitation
+showed up when `secret_scanning_non_provider_patterns` accepted a `PATCH` and stayed
+`disabled`: parts of the security API surface are simply not available here.
+
+A job that can never pass is worse than no job — it cannot gate anything and it keeps CI red
+— so it was removed in the same pull request that added it.
+
+**The honest consequence:** there is now **no pre-merge dependency gate.** Dependabot alerts
+still work, but they fire *after* a merge. That is precisely the niche `pip-audit` would
+fill, and it is portable — it depends on no GitHub feature, which also satisfies the
+"don't get locked into GitHub Actions" argument. The decision to skip `pip-audit` was taken
+while Dependency Review was believed to cover this; that premise is now false.
+
+**Recommendation: add `pip-audit` as a ~5s step in the `backend` job.** Not done in this
+pull request, because the choice to skip it was explicit and reversing it silently would be
+wrong. Tracker row V12.
