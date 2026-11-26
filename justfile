@@ -65,7 +65,7 @@ test-integration: up db-upgrade
 
 lint:
     cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy src
-    cd frontend && npm run lint && npx prettier --check . && npx tsc --noEmit
+    cd frontend && npm run lint && npx prettier --check . && npx tsc -b
 
 fmt:
     cd backend && uv run ruff format . && uv run ruff check --fix .

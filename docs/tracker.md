@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 15:34 IST
+> **Last updated:** 2026-11-26 15:48 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -18,13 +18,12 @@ Status legend: `done` · `in progress` · `next` · `blocked` · `todo` · `n/a 
 skeleton is in place and all 19 layer packages import. Step 4a has landed: 142 packages
 resolved with no conflicts, ruff/mypy/pytest configured, and 22 unit tests passing.
 
-CI: `backend` and `docker` green. `frontend` red (prettier has never run on the Vite
-scaffold — step 4b). `integration` red (no Alembic yet — step 4c, which has to wait for
-`core/config.py`).
+CI: `backend`, `docker` and `frontend` green. `integration` red (no Alembic yet — step
+4c, which has to wait for `core/config.py`).
 
-**Immediate next action:** step 4b, frontend dev dependencies and formatting — a separate
-PR per the frontend/backend separation rule. Then C3 can add `backend` + `docker` to the
-required checks.
+**Immediate next action:** C3 + C4 — add `backend`, `docker` and `frontend` to the required
+checks and re-run `just protect-main`. Then milestone 1a (`core/config.py`), which unblocks
+4c and with it the `integration` check.
 
 ---
 
@@ -38,7 +37,7 @@ required checks.
 | 3b | GitHub remote, merge settings, protect `main` | **done** | 2026-11-26. Ruleset active without CI checks; see CI/CD track |
 | 3c | Backend layered structure refactor | **done** | 2026-11-26. Adapted from creditforge; see backend/AGENTS.md → Layout |
 | 4a | Backend dependencies, ruff/mypy/pytest config, first test | **done** | 2026-11-26. Turned `backend` green. No resolver conflicts. Alembic deliberately deferred to 4c — see below |
-| 4b | Frontend dev deps (tailwind, vitest, prettier), format the scaffold, `.prettierignore` | **next** | Separate PR. Turns `frontend` green. Also aligns Node to 26 and fixes the stale `Lint (eslint)` label |
+| 4b | Frontend dev deps (tailwind, vitest, prettier), format the scaffold, `.prettierignore`, first vitest test | **done** | 2026-11-26. Turned `frontend` green. Also fixed a vacuous type check (`tsc --noEmit` checks nothing with project references), the stale `Lint (eslint)` label, and aligned CI Node to 26 to match the Docker image |
 | 4c | `db/base.py`, `alembic init -t async`, `env.py` wiring, migration 0001 (`CREATE EXTENSION vector`), first integration test | todo | **Blocked on 1a.** `env.py` imports `shuhari.db.base` and `settings.database_url`, so it cannot be written before `core/config.py` exists. Turns `integration` green |
 | 5 | `just check-all` green, then tighten the ruleset (C3–C5) | todo | Each of 4a/4b/4c turns exactly one check green |
 
@@ -184,7 +183,7 @@ runs on every auth diff at no setup cost.
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
 | C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **next** — both are green |
 | C8 | `uv lock --check` in the `backend` job — `--frozen` alone misses a drifted `pyproject.toml` | Bootstrap 4 | **done** |
-| C4 | Add `frontend` to required checks | Bootstrap 5 | todo |
+| C4 | Add `frontend` to required checks | Bootstrap 4b | **next** — green |
 | C5 | Add `integration` to required checks | Bootstrap 5 | todo |
 | C6 | Images published to GHCR on main | Bootstrap 5 | todo — job exists, gated on the four checks |
 | C7 | Deploy job | Deployment phase 3 | todo — placeholder comment in `ci.yml` |
@@ -220,8 +219,8 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 
 | Step | What | When | Status |
 | --- | --- | --- | --- |
-| F1 | Tailwind + vite proxy + `test` script | Bootstrap 4 | **next** |
-| F2 | `lib/api.ts` as the only caller of the backend; `VITE_API_BASE_URL` (`/api/v1`) | Milestone 2 | todo |
+| F1 | Tailwind + vite proxy + `test` script | Bootstrap 4b | **done** | 
+| F2 | `lib/api.ts` as the only caller of the backend; `VITE_API_BASE_URL` (`/api/v1`). Also add `@import "tailwindcss";` to `src/index.css` — deliberately omitted in 4b because Tailwind's preflight restyles the page, which belongs with the first real UI, not with a toolchain PR | Milestone 2 | todo |
 | F3 | Streaming renderer, Stop button, SSE reconnect | Milestone 2 | todo |
 | F4 | Sessions sidebar | Milestone 3 | todo |
 | F5 | Tool-call cards | Milestone 4 | todo |
@@ -238,7 +237,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | Q2 | mem0 `history_db_path`: keep SQLite or move to Postgres? | 2026-11-26 | Milestone 5 |
 | Q3 | Should `localdev/features/` be tracked in git instead of ignored? | 2026-11-26 | No — reversible with `git mv` |
 | Q4 | Add SPDX headers + `CITATION.cff` like creditforge and shuhari-cli? | 2026-11-26 | No |
-| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md` at lines 553-735, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | **Recommend yes.** Now caused stale text three times (PR #6, the ADR-0002 PR, and PR #13 — whose Capacity, TDD, ruff-`S` and auth-test additions are all missing from the embedded copy). Three strikes with a known, repeating cost |
+| Q5 | `docs/blueprint.md` embeds full copies of files that now exist for real (`backend/AGENTS.md` at lines 553-735, `frontend/AGENTS.md` from 736, PR template, justfile, compose.yaml...). Replace those sections with pointers so there is one source of truth? | 2026-11-26 | **Recommend yes — the copies are already unreliable.** Audited 2026-11-26: the backend copy is missing PR #13's Capacity, TDD, ruff-`S` and auth-test sections; the frontend copy still says `ESLint` (changed in PR #7) and `App.tsx` (renamed in PR #11). Six known divergences across five PRs. Syncing a line at a time is theatre while the rest rots; the audit cannot catch it because a fenced copy is sample text, not a link |
 
 ---
 
