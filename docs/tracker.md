@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 16:02 IST
+> **Last updated:** 2026-11-26 16:31 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -167,7 +167,12 @@ reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verific
 | Step | What | When | Status |
 | --- | --- | --- | --- |
 | V1 | Ruff `S` rules (flake8-bandit) enabled in `pyproject.toml` — replaces `bandit` | Bootstrap 4a | **done** | 
-| V2 | Confirm GitHub secret scanning + push protection are on (free, public repo) — replaces `gitleaks`. Dependabot already configured | Bootstrap 4a | todo |
+| V2 | GitHub secret scanning + push protection + Dependabot security updates — replaces `gitleaks` | Bootstrap 4a | **done** — 2026-11-26. **They were off until now**, while [ADR 0004](decisions/0004-verification-layers.md) cited them as the reason to skip `gitleaks` |
+| V8 | CodeQL — separate workflow, PR + weekly, **not** a required check (1-3 min vs a ~35s gating pipeline) | Bootstrap 4b | **done** | 
+| V9 | ~~GitHub Dependency Review~~ | — | **cannot run here.** The dependency-graph REST API 404s on this repo (SBOM *and* compare endpoints), so the action fails `Forbidden`. Added and removed in the same PR |
+| V12 | `pip-audit` as a ~5s step in the `backend` job | **decide** | **Recommended.** V9's failure removed the pre-merge dependency gate, which was the stated reason for skipping `pip-audit`. Dependabot alerts only fire post-merge. Portable, no GitHub dependency |
+| V10 | `pytest-cov` wired, no global `fail_under`; 95% target applies to the auth module only | Bootstrap 4b | **done** | 
+| V11 | `pip-licenses` as a monthly scheduled job | if this is ever redistributed | todo — deferred, not a PR gate |
 | V3 | The three auth tests: route-has-identity-dependency, cross-user isolation, no mass assignment | Milestone 1c, extended at 3 and 5 | todo — rows Z1, Z4 |
 | V4 | Schemathesis against our own `openapi.json` | Milestone 2 | todo |
 | V5 | Locust: one scenario, 50 users, p95/p99 recorded | After milestone 2 | todo — target per [ADR 0003](decisions/0003-capacity-target.md) |
@@ -248,7 +253,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | Date | Decision | Where |
 | --- | --- | --- |
 | 2026-11-26 | Local-first development; GCP in phases; portability rules now | [decisions/0001-deployment-strategy.md](decisions/0001-deployment-strategy.md) |
-| 2026-11-26 | Public repo under `bandhu-workshop`, MIT, no AI authorship in commits | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
+| 2026-11-26 | Public repo under `bandhu-workshop`, MIT | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Ruleset (not classic protection); required CI checks added incrementally | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | Squash-only merges, not rebase — every commit on `main` is a CI-verified state | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md) |
 | 2026-11-26 | One async database URL; mem0 gets discrete params; `psycopg` dropped | [decisions/0002-one-database-url.md](decisions/0002-one-database-url.md) |
@@ -259,3 +264,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Capacity target 50 concurrent users; no Redis, cache, queue or worker tuning | [decisions/0003-capacity-target.md](decisions/0003-capacity-target.md) |
 | 2026-11-26 | Verification: ruff `S` + Dependabot + secret scanning + three auth tests + Schemathesis + Locust. Skipped: bandit, semgrep, pip-audit, gitleaks, k6, ZAP, Burp, jwt_tool, Redis | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) |
 | 2026-11-26 | AuthN scope: the seam only (A1/A2) now; real identity (A3/A4) stays at deployment phase 3 | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) |
+| 2026-11-26 | Pull requests open as **drafts** with the first commit, assigned to self; `just draft` / `just push` / `just ready` | [../AGENTS.md](../AGENTS.md#pull-requests) |
+| 2026-11-26 | The rule forbidding a `Co-Authored-By: Claude` trailer is **withdrawn**; tooling default attribution applies | [../AGENTS.md](../AGENTS.md#rules) |
+| 2026-11-26 | CI additions: CodeQL (not gating), Dependency Review, `pytest-cov`. `bandit`, `gitleaks` and `pip-audit` skipped again as duplicates | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision |
+| 2026-11-26 | Gating CI keeps a ~35s budget; one workflow with parallel jobs, a second workflow only when the trigger differs | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Speed |

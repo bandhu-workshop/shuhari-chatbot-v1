@@ -119,10 +119,37 @@ types:
 branch name:
     git switch main && git pull --ff-only && git switch -c {{name}}
 
-# push the branch and open a PR filled from commit messages
-pr:
+# Draft is deliberate, not cosmetic: CI runs on every push so a failure shows up in the
+# commit that caused it, and a draft pr cannot be merged -- neither by hand nor by
+# auto-merge -- until `just ready`. See docs/github-workflow/repo-branch-protection.md.
+
+# open a draft pr for this branch, assigned to you (run after the first commit)
+draft:
     git push -u origin HEAD
-    gh pr create --fill
+    gh pr create --draft --fill --assignee @me
+
+# push the latest commits and watch CI for this branch's pr
+push:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git push
+    # Immediately after a push no workflow run exists for the new commit yet, and
+    # `gh pr checks` exits 1 with "no checks reported". Wait for a run keyed to THIS
+    # commit: `gh pr view --json statusCheckRollup` is not a usable signal here,
+    # because it can still return the previous head's checks and break the wait early.
+    sha=$(git rev-parse HEAD)
+    for _ in $(seq 1 30); do
+      if [ -n "$(gh run list --commit "$sha" --limit 1 --json databaseId --jq '.[0].databaseId // empty')" ]; then
+        break
+      fi
+      sleep 4
+    done
+    gh pr checks --watch
+
+# mark the pr ready and let it squash-merge the moment CI goes green
+ready:
+    gh pr ready
+    gh pr merge --squash --delete-branch --auto
 
 # squash-merge automatically once CI is green, delete the branch
 merge:

@@ -1,6 +1,6 @@
 # GitHub workflow and branch protection
 
-> **Last updated:** 2026-11-26 16:02 IST
+> **Last updated:** 2026-11-26 16:31 IST
 
 Solo-developer workflow for this repository. The repo lives at
 `bandhu-workshop/shuhari-chatbot-v1` (public). Same conventions as
@@ -14,21 +14,40 @@ with the differences noted at the bottom.
   a linear history. For a squash merge the PR title becomes the commit message on
   `main` — write it as a proper commit message (e.g. `feat: add session store`).
 - Branch names: `feat/…`, `fix/…`, `refactor/…`, `docs/…`, `chore/…`.
-- Never add a `Co-Authored-By: Claude …` (or any AI) trailer to commit messages,
-  and never mention Claude/AI authorship in commits or PR descriptions. Claude/AI
-  must never appear as a GitHub contributor on this repo — commit authorship stays
-  solely with the human developer.
-- Use the `git`/`gh` CLI for all GitHub operations.
+- Open the pull request as a **draft** with the first commit — see
+  [Daily flow](#daily-flow--draft-first).
+- Use the `git`/`gh` CLI for all GitHub operations, in preference to an MCP server.
+- Commit attribution follows the tooling default. The earlier rule forbidding a
+  `Co-Authored-By: Claude …` trailer was withdrawn on 2026-11-26.
 
-## Daily flow
+## Daily flow — draft first
 
 ```bash
 just branch feat/session-store   # fresh main, new branch
-# ... work, commit ...
-just pr                          # push + open a PR filled from commits
-just merge                       # squash-merge automatically once CI is green
+# ... first commit ...
+just draft                       # push + open a DRAFT pr, assigned to you
+# ... keep committing ...
+just push                        # push + watch this branch's CI
+just ready                       # mark ready, then squash-merge once CI is green
 just sync                        # back to main
 ```
+
+**The pull request opens with the first commit, not when the work is finished.** Three
+reasons, in order of how much they matter:
+
+1. **CI runs on every push.** A failure appears in the commit that caused it, rather than
+   surfacing ten commits later with nothing to bisect. This is the whole point.
+2. **A draft cannot be merged.** Not by hand, not by auto-merge. The draft state is a
+   safety interlock, not a label — which is what makes it safe to open early.
+3. **Required checks are `strict`,** so a branch that falls behind `main` must be updated
+   before it merges. Pushing early surfaces that immediately instead of at merge time.
+
+`just draft` assigns the pull request to you (`--assignee @me`) so it appears in your own
+list, and fills the body from the commit messages. `just merge` remains for a pull request
+that is already out of draft.
+
+Never mark a pull request ready while a required check is red. Fix it, or say in the
+description why it is expected to fail.
 
 ## Scope of a pull request
 
@@ -63,6 +82,24 @@ just protect-main
 
 **`main.json` always reflects what is live.** Do not list a rule there that is not
 applied; that drift is the thing the committed-config approach exists to prevent.
+
+### Repository security settings
+
+Separate from the ruleset, and all free on a public repository. Verified enabled
+2026-11-26:
+
+| Setting | State | Replaces |
+| --- | --- | --- |
+| `secret_scanning` | enabled | a `gitleaks` CI step |
+| `secret_scanning_push_protection` | enabled | — it **rejects the push**, rather than failing CI once the secret is already in remote history |
+| Dependabot alerts | enabled | — |
+| Dependabot **security updates** | enabled | opens fix pull requests automatically; separate from the version updates in `dependabot.yml` |
+| `secret_scanning_non_provider_patterns` | disabled | accepted by the API but does not take effect; needs the web UI or is unavailable on a free public repo |
+| `secret_scanning_validity_checks` | disabled | same |
+
+These were **off** until 2026-11-26 even though
+[ADR 0004](../decisions/0004-verification-layers.md) cited them as the reason not to run
+`gitleaks`. See that ADR's Revision section.
 
 ### Currently enforced
 
@@ -134,7 +171,7 @@ and the ruleset disagree about a method.
 | --- | --- | --- |
 | Mechanism | classic branch protection | ruleset committed at `.github/rulesets/main.json` |
 | Merge methods | squash and rebase | squash only |
-| Required checks | `ci` | `backend`, `integration`, `frontend`, `docker` |
+| Required checks | `ci` | `backend`, `frontend`, `docker` (and `integration` after 4c) |
 
 Everything else — public, PR-required, 0 approvals, linear history, conversation
-resolution, no force pushes, no AI authorship — is the same.
+resolution, no force pushes — is the same.

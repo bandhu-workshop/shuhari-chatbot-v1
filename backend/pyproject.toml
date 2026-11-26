@@ -2,9 +2,7 @@
 name = "shuhari"
 version = "0.1.0"
 description = "Shuhari chatbot backend: ADK agents, FastAPI API, memory, evals"
-authors = [
-    { name = "dinabandhu50", email = "beheradinabandhu50@gmail.com" }
-]
+authors = [{ name = "dina", email = "beheradinabandhu50@gmail.com" }]
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
@@ -32,9 +30,10 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "mypy>=2.4.1",
-    "pytest>=9.2.0",
-    "pytest-asyncio>=1.5.0",
-    "ruff>=0.17.6",
+ "pytest>=9.2.0",
+ "pytest-asyncio>=1.5.0",
+ "pytest-cov>=7.1.0",
+ "ruff>=0.17.6",
 ]
 
 [tool.ruff]
@@ -71,3 +70,15 @@ markers = ["integration: needs Postgres"]
 asyncio_mode = "auto"
 # Set explicitly: pytest-asyncio warns that this default changes in a future release.
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+source = ["shuhari"]
+branch = true
+
+[tool.coverage.report]
+# No global fail_under: a repo-wide coverage number is theatre, and right now the
+# package is almost all empty __init__.py files, so it would read ~100% and mean
+# nothing. The real target is 95% on the auth module when it lands
+# (docs/decisions/0004-verification-layers.md).
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]

@@ -46,7 +46,7 @@ jobs:
       - name: Types (mypy)
         run: uv run mypy src
       - name: Unit tests (pytest)
-        run: uv run pytest -m "not integration"
+        run: uv run pytest -m "not integration" --cov --cov-report=term-missing
 
   integration:
     name: integration
