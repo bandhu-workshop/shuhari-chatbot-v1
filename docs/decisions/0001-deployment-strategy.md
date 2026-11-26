@@ -1,5 +1,7 @@
 # 0001 — Deployment strategy: local-first, GCP later
 
+> **Last updated:** 2026-11-26 12:44 IST
+
 - **Status:** Accepted
 - **Date:** 2026-11-26
 - **Supersedes:** nothing

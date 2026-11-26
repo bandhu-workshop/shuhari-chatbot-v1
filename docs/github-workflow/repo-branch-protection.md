@@ -1,5 +1,7 @@
 # GitHub workflow and branch protection
 
+> **Last updated:** 2026-11-26 12:44 IST
+
 Solo-developer workflow for this repository. The repo lives at
 `bandhu-workshop/shuhari-chatbot-v1` (public). Same conventions as
 [`bandhu-workshop/shuhari-cli`](https://github.com/bandhu-workshop/shuhari-cli),
@@ -84,6 +86,33 @@ it pass, by appending to the `rules` array and re-running `just protect-main`:
 
 The target end state is all four required and strict (the branch must be up to date
 with `main` before merging).
+
+## Why squash-only, not rebase
+
+`required_linear_history` blocks **merge commits only** — squash and rebase both satisfy
+it, because both produce single-parent commits. So linear history was never the reason to
+pick one over the other. Squash-only is chosen for a different reason:
+
+- **CI only ever tests the branch tip.** With a rebase merge, each branch commit lands on
+  `main` individually having never been verified in isolation, which makes `git bisect`
+  unreliable. With squash, every commit on `main` is exactly a state that passed all CI
+  checks.
+- **One commit per PR = one commit per milestone.** `main` becomes the milestone log,
+  which is the same granularity the project already works in.
+- **No discipline needed on the branch.** Commit `wip` and `fix typo` freely; it collapses
+  into one well-named commit. Rebase would move the burden from "write one good PR title"
+  to "every commit message must be good forever".
+- **Nothing is lost.** GitHub keeps every branch commit in the PR's Commits tab
+  permanently, even after a squash merge — so atomic commits are still practised and still
+  reviewable a year later. Only `main` is collapsed.
+
+If a PR contains genuinely distinct logical changes worth separating on `main`, split it
+into two PRs rather than switching to rebase.
+
+**If you ever do enable rebase, change both places or merging breaks entirely:**
+`gh repo edit --enable-rebase-merge` *and* add `"rebase"` to `allowed_merge_methods` in
+`main.json`, then `just protect-main`. GitHub blocks the merge when the repository setting
+and the ruleset disagree about a method.
 
 ## Differences from `shuhari-cli`
 
