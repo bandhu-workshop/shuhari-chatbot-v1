@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 17:48 IST
+> **Last updated:** 2026-11-26 18:52 IST
 
 A Claude/ChatGPT-style chatbot agent built on Google ADK, as a learning project: every component of a modern assistant (agent loop, streaming, sessions, tools, memory, research, evals) is built in small end-to-end milestones, traced in Phoenix and measured with evals.
 
@@ -14,6 +14,7 @@ A Claude/ChatGPT-style chatbot agent built on Google ADK, as a learning project:
 | [`docs/architecture.md`](docs/architecture.md) | How the running system fits together, with honest state markers |
 | [`docs/decisions/`](docs/decisions/) | ADRs — one note per non-obvious choice. **These override the blueprint** |
 | [`docs/blueprint.md`](docs/blueprint.md) | The original spec: milestones, eval method, CI/CD, and which files exist and why |
+| [`docs/project-kickoff-checklist.md`](docs/project-kickoff-checklist.md) | Questions to clarify goals, users, behavior, technical constraints, quality, security, and delivery before development |
 | [`docs/github-workflow/repo-branch-protection.md`](docs/github-workflow/repo-branch-protection.md) | Branch protection, merge rules, the pull-request flow, labels |
 | [`docs/roadmap.md`](docs/roadmap.md) | The wider Shuhari roadmap (Project 1 ADK → Project 2 from scratch) |
 | [`AGENTS.md`](AGENTS.md) | Rules for coding agents: coding style, pull requests, browser verification (`CLAUDE.md` links to it) |
