@@ -130,7 +130,17 @@ draft:
 
 # push the latest commits and watch CI for this branch's pr
 push:
+    #!/usr/bin/env bash
+    set -euo pipefail
     git push
+    # Immediately after a push the workflow run does not exist yet, and
+    # `gh pr checks` exits 1 with "no checks reported". Wait for checks to appear
+    # before watching, so this recipe reports CI rather than a race.
+    for _ in $(seq 1 20); do
+      n=$(gh pr view --json statusCheckRollup --jq '.statusCheckRollup | length' 2>/dev/null || echo 0)
+      [ "${n:-0}" -gt 0 ] && break
+      sleep 3
+    done
     gh pr checks --watch
 
 # mark the pr ready and let it squash-merge the moment CI goes green
