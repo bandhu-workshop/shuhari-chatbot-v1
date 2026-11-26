@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 17:48 IST
+> **Last updated:** 2026-11-26 18:12 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -21,8 +21,12 @@ resolved with no conflicts, ruff/mypy/pytest configured, and 22 unit tests passi
 CI: `backend`, `docker` and `frontend` green. `integration` red (no Alembic yet — step
 4c, which has to wait for `core/config.py`).
 
-`backend`, `docker` and `frontend` are now **required** checks on `main`, strict policy.
-`integration` is not, because it cannot pass until 4c.
+`backend`, `docker` and `frontend` are **required** checks on `main`, strict policy.
+`integration` is not yet required: until 4c exists it has nothing to do, and its steps are
+guarded so the job **succeeds** rather than failing. Before that guard it failed on every
+single run, which made every pull request and every `main` commit show red — and, less
+visibly, kept `publish` skipped (it lists `integration` in `needs`), so no image had ever
+reached GHCR.
 
 **Immediate next action:** milestone 1a — `core/config.py`. It unblocks 4c (Alembic), which
 turns `integration` green and completes the required-checks rollout at C5.
@@ -193,9 +197,10 @@ runs on every auth diff at no setup cost.
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
 | C3 | Add `backend` + `docker` to required checks | Bootstrap 4a | **done** | 
 | C8 | `uv lock --check` in the `backend` job — `--frozen` alone misses a drifted `pyproject.toml` | Bootstrap 4 | **done** |
+| C9 | `integration` steps guarded on `backend/alembic.ini` and `backend/tests/integration/test_*.py` existing, so the job passes honestly instead of failing until 4c. Guards clear themselves; 4c needs no edit to this file | Bootstrap 4c | **done** |
 | C4 | Add `frontend` to required checks | Bootstrap 4b | **done** — strict policy on, so branches must be up to date | 
 | C5 | Add `integration` to required checks | After 4c | todo — the last one; then all four are required and strict |
-| C6 | Images published to GHCR on main | Bootstrap 5 | todo — job exists, gated on the four checks |
+| C6 | Images published to GHCR on main | Bootstrap 5 | **unblocked** 2026-11-26 — `publish` was being skipped because `integration` failed on every run. Publishes on the next `main` push |
 | C7 | Deploy job | Deployment phase 3 | todo — placeholder comment in `ci.yml` |
 
 Each check is added to `.github/rulesets/main.json` in the PR that makes it pass, then
