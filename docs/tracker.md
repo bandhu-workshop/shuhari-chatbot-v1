@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 19:58 IST
+> **Last updated:** 2026-11-26 17:29 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -72,7 +72,7 @@ Each gets a folder under `localdev/features/backend/YYYY-MM-DD_<name>/`.
 | # | Feature | What lands | Tracker rows | Depends on |
 | --- | --- | --- | --- | --- |
 | 1a | **config** | `core/config.py`: `POSTGRES_*` → one `database_url`, model ids, service URLs, `DATABASE_URL` override, `.env` optional. Unit tests. | B2, deployment P0 | step 4a |
-| 1b | **logging** | `core/logging.py`: JSON to stdout, `session_id`/`user_id` in context. Unit tests. | B2, O2 | 1a |
+| 1b | **logging** | `core/logging.py`: JSON to stdout, `session_id`/`user_id` in context. Unit tests: capture stdout, `json.loads` the line, assert `level` / `event` / `timestamp` are present, that `session_id` and `user_id` appear when bound and are absent when not, and that an exception logs a `traceback` field rather than a multi-line record. | B2, O2 | 1a |
 | 1c | **app skeleton** | `main.py` `create_app()`, `core/exceptions.py`, `api/health.py` (`/healthz`, `/readyz`), `api/deps.py` (`DbSession` + `get_current_user()`), `db/base.py`, `db/session.py`, SIGTERM lifespan. Unit tests. | B3, B4, A1, A2 | 1a, 1b |
 | 1d | **the agent** | `ai/agents/chatbot/agent.py` exporting `root_agent` via `LiteLlm(settings.chat_model)`, `ai/prompts/chatbot.md`. Runnable with `just adk`. | milestone 1 core | 1a |
 | 1e | **tracing** | `ai/observability/tracing.py`: OTEL + OpenInference → Phoenix, no-op when `PHOENIX_COLLECTOR_ENDPOINT` unset. | O1 | 1d |
@@ -139,7 +139,7 @@ Flow: edit a table in `models/` (register it in `db/base.py`) → `just migratio
 | Step | What | When | Status |
 | --- | --- | --- | --- |
 | O1 | `ai/observability/tracing.py`: OTEL + OpenInference → Phoenix, no-op when endpoint unset | Milestone 1 | todo |
-| O2 | `core/logging.py`: JSON logs to stdout, with `session_id` / `user_id` in context | Milestone 1 | todo |
+| O2 | `core/logging.py`: JSON logs to stdout, with `session_id` / `user_id` in context. **The format is a test, not a convention** — see 1b for the assertions. A doc saying "logs are JSON" cannot fail; `json.loads` on captured stdout can | Milestone 1 | todo |
 | O3 | Time-to-first-token visible in traces | Milestone 2 | todo |
 | O4 | Swap the OTEL exporter to Cloud Trace in production | Deployment phase 3 | todo |
 
@@ -248,6 +248,7 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | F6 | Memory view/edit/delete | Milestone 5 | todo |
 | F7 | `just types` generating `api-types.ts` from OpenAPI | Milestone 2 | todo |
 | F8 | Scripted Playwright suite in `frontend/tests/e2e/`, `just e2e`, and an on-demand workflow triggered by the `run:e2e` label | Milestone 2 | todo — deliberately deferred; there is no UI to test until then. The Playwright **MCP** server is already set up for agentic verification |
+| F9 | `"no-console": "error"` in `frontend/.oxlintrc.json` — committed frontend code logs nothing to the browser console; errors surface through the error boundary instead. Browser logs are a debugging tool, not a log pipeline: nothing is shipped to the backend | Milestone 2 | todo — lands with F2/F3, the first code that would reach for `console.log` |
 
 ---
 
