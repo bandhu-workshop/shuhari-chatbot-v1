@@ -1,6 +1,6 @@
 # frontend
 
-> **Last updated:** 2026-11-26 13:44 IST
+> **Last updated:** 2026-11-26 14:52 IST
 
 React + TypeScript, Vite, Tailwind. `node_modules` lives here. Talks only to the backend API on :8000, under `/api/v1`.
 
@@ -51,6 +51,22 @@ frontend source; those are for dated working documents only.
 - Markdown + code highlighting for assistant messages.
 - React state + context first; no global state library until needed.
 - Every user action (send, stop, regenerate, thumbs up/down) maps to one function in `lib/api.ts`.
+
+## Coding style and testing
+
+Repo-wide coding style: [../AGENTS.md#coding-style](../AGENTS.md#coding-style). It applies
+here too, TDD included. Development goes through the superpowers skills —
+[../AGENTS.md#how-we-work](../AGENTS.md#how-we-work).
+
+- **TDD applies to logic, not to pixels.** Hooks, parsers, the SSE event reader, state
+  reducers and everything in `lib/` get a vitest test written first. Presentational
+  components don't — a snapshot test of markup is maintenance without signal.
+- **Never assert on model output.** Assistant text is non-deterministic. Test that a token
+  *renders*; never test *what* it says. Model behaviour is measured in `backend/evals/`.
+- Capacity target is 50 concurrent users
+  ([ADR 0003](../docs/decisions/0003-capacity-target.md)). Nothing on this side needs tuning
+  for it. The one thing that matters here is that the SSE client reconnects and resumes
+  rather than restarting the turn.
 
 ## Portability (Cloud Run is the deployment target)
 

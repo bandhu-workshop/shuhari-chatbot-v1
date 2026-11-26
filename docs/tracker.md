@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 13:44 IST
+> **Last updated:** 2026-11-26 14:52 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -91,7 +91,14 @@ These cut across milestones. Each row is a step, in order.
 | A3 | Real identity provider (Firebase Auth or IAP) behind the same dependency | Deployment phase 3 | todo |
 | A4 | Token verification + session cookie handling in `lib/api.ts` | Deployment phase 3 | todo |
 
-Why A1 first: retrofitting identity touches every route, every test and every memory
+**Scope decided 2026-11-26: the seam only.** A1 and A2 land in milestone 1c; A3 and A4
+stay at deployment phase 3. Until there is a deployment there is no second user and no
+attacker, so building real identity now would mean building a token service in order to
+have something to test. The token-level checks that go with it — `alg: none`, refresh
+rotation, token-family revocation, issuer/audience, login rate limiting — are therefore
+explicitly out of scope; see [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md).
+
+Why A1 first anyway: retrofitting identity touches every route, every test and every memory
 record. See `backend/AGENTS.md` → Portability.
 
 ### Authorization (permissions: *what may they do*)
@@ -147,6 +154,25 @@ Flow: edit a table in `models/` (register it in `db/base.py`) → `just migratio
 | S3 | `security.jsonl` must-pass at 100% | Milestone 4 | todo |
 | S4 | Secrets from Secret Manager, not `.env` | Deployment phase 3 | todo |
 
+### Verification
+
+Which tools we use to check our own work, and in what order. The *skipped* tools and the
+reasoning live in [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md)
+— read it before adding anything to this list.
+
+| Step | What | When | Status |
+| --- | --- | --- | --- |
+| V1 | Ruff `S` rules (flake8-bandit) enabled in `pyproject.toml` — replaces `bandit` | Bootstrap 4a | todo |
+| V2 | Confirm GitHub secret scanning + push protection are on (free, public repo) — replaces `gitleaks`. Dependabot already configured | Bootstrap 4a | todo |
+| V3 | The three auth tests: route-has-identity-dependency, cross-user isolation, no mass assignment | Milestone 1c, extended at 3 and 5 | todo — rows Z1, Z4 |
+| V4 | Schemathesis against our own `openapi.json` | Milestone 2 | todo |
+| V5 | Locust: one scenario, 50 users, p95/p99 recorded | After milestone 2 | todo — target per [ADR 0003](decisions/0003-capacity-target.md) |
+| V6 | One mitmproxy session to verify cookie flags and that no token leaks into a URL or log | When cookies first ship (phase 3) | todo |
+| V7 | OWASP ZAP API scan | Deployment phase 3 | todo — meaningless until publicly reachable |
+
+`just check` already runs the mechanical half (docs audit, lint, unit tests). `/security-review`
+runs on every auth diff at no setup cost.
+
 ### CI/CD
 
 | Step | What | When | Status |
@@ -154,6 +180,7 @@ Flow: edit a table in `models/` (register it in `db/base.py`) → `just migratio
 | C1 | `ci.yml` with backend / integration / frontend / docker + publish | Bootstrap 3 | **done** |
 | C2 | Ruleset on `main` — PR required, squash only, linear, no force-push | Bootstrap 3b | **done** |
 | C3 | Add `backend` + `docker` to required checks | Bootstrap 4 | todo |
+| C8 | `uv lock --check` in the `backend` job — `--frozen` alone misses a drifted `pyproject.toml` | Bootstrap 4 | **done** |
 | C4 | Add `frontend` to required checks | Bootstrap 5 | todo |
 | C5 | Add `integration` to required checks | Bootstrap 5 | todo |
 | C6 | Images published to GHCR on main | Bootstrap 5 | todo — job exists, gated on the four checks |
@@ -223,3 +250,8 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | One async database URL; mem0 gets discrete params; `psycopg` dropped | [decisions/0002-one-database-url.md](decisions/0002-one-database-url.md) |
 | 2026-11-26 | oxlint, not ESLint, for frontend linting | [../frontend/AGENTS.md](../frontend/AGENTS.md) |
 | 2026-11-26 | Backend layered as `core`/`api`/`db`/`models`/`schemas`/`ai`, adapted from creditforge; evals split code-vs-data; routes versioned `/api/v1` | [../backend/AGENTS.md](../backend/AGENTS.md) → Layout |
+| 2026-11-26 | Coding style: no over-engineering, never assume, TDD for deterministic code, evals for AI code, prefer a vetted well-known library, minimal diffs | [../AGENTS.md](../AGENTS.md#coding-style) |
+| 2026-11-26 | Development goes through the superpowers skills — brainstorm, plan, TDD, verify, review — with output saved to the feature folder | [../AGENTS.md](../AGENTS.md#how-we-work) |
+| 2026-11-26 | Capacity target 50 concurrent users; no Redis, cache, queue or worker tuning | [decisions/0003-capacity-target.md](decisions/0003-capacity-target.md) |
+| 2026-11-26 | Verification: ruff `S` + Dependabot + secret scanning + three auth tests + Schemathesis + Locust. Skipped: bandit, semgrep, pip-audit, gitleaks, k6, ZAP, Burp, jwt_tool, Redis | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) |
+| 2026-11-26 | AuthN scope: the seam only (A1/A2) now; real identity (A3/A4) stays at deployment phase 3 | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) |

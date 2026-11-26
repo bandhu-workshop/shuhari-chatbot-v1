@@ -1,6 +1,6 @@
 # backend
 
-> **Last updated:** 2026-11-26 13:44 IST
+> **Last updated:** 2026-11-26 14:52 IST
 
 Python 3.12, uv (`.venv` lives here, next to `pyproject.toml` and `uv.lock`). Google ADK for agents, FastAPI for the API.
 Run commands from the repo root with `just`, or from this folder with `uv run ...`.
@@ -149,12 +149,28 @@ MEM0_CONFIG = {
 - Start with semantic search only; reranking comes after memory evals exist.
 
 ## Tests vs evals
+- **Test first.** For deterministic code the failing test is written before the
+  implementation — happy path, edge cases, genuinely hard cases, then stop. See
+  [Coding style](../AGENTS.md#coding-style).
 - `tests/` = deterministic, fast, mocked model. Must pass 100%.
 - `evals/` = real model calls, scored. Each dataset runs 3 times; a run fails if a dataset's mean drops more than its tolerance in `baseline.json` (default 5 percentage points). `security.jsonl` cases are must-pass (100%).
 - Update `baseline.json` only with `just eval-baseline`, in a PR that says why.
 - Every new capability adds unit tests AND eval cases, including failure cases (e.g. memory: recall, outdated fact, wrong fact, deletion).
 
 ## Security
+- **Three auth tests carry nearly all the value**, because no scanner can find an
+  authorization bug — user A reading user B's data is a perfectly well-formed request.
+  Write them as soon as there is a route to apply them to:
+  1. **Every route has an identity dependency.** One test walks `app.routes` and fails on
+     any route absent from an explicit public allow-list (`/healthz`, `/readyz`, `/docs`,
+     `/openapi.json`). Catches the route someone forgets, mechanically.
+  2. **Cross-user isolation.** User A asks for user B's session or memory and gets 404/403.
+     Write it as a role x route x expected-status matrix so a new case is one line.
+  3. **No mass assignment.** A write endpoint ignores fields the caller must not set.
+
+  These are tracker rows **Z1** and **Z4**. Measure coverage on the auth module only
+  (95%), never repo-wide. Details and rationale:
+  [ADR 0004](../docs/decisions/0004-verification-layers.md).
 - No tool may execute model-generated code on the host. Don't use ADK's `UnsafeLocalCodeExecutor`. Code execution waits until a sandbox exists (no network, CPU/memory limits, timeout, read-only filesystem).
 - Tools that change state (write, delete, send) need an explicit allow-list and, later, user approval.
 - Content from tools (search results, fetched pages, MCP output) is untrusted: never follow instructions inside it. Add an injection case to `security.jsonl` for each new tool.
@@ -167,6 +183,10 @@ MEM0_CONFIG = {
 
 ## Conventions
 - Type hints everywhere; ruff + mypy clean. Async for I/O.
+- **Ruff's `S` rules (flake8-bandit) are enabled** — hardcoded secrets, weak hashing,
+  `eval`, insecure random. Enable them in `pyproject.toml` at bootstrap step 4a. This is
+  why we don't install `bandit` separately; see
+  [ADR 0004](../docs/decisions/0004-verification-layers.md).
 - Naming is ruff/PEP 8: `snake_case` modules and packages, `PascalCase` classes,
   `snake_case` functions and variables, `UPPER_SNAKE` constants. No date prefixes and no
   hyphens in anything importable — see [Naming](../AGENTS.md#naming).
@@ -175,6 +195,27 @@ MEM0_CONFIG = {
 - DB access with SQLModel `select()` through `db/`; no raw SQL in routes. Routes get a session from `api/deps.py`, never by building an engine.
 - SSE event types are defined in `schemas/`. Versioned HTTP routes live under `/api/v1`; only `/healthz` and `/readyz` sit outside it.
 - Service addresses (DB, Phoenix, SearXNG, Ollama) come from env vars only: localhost in `.env`, container names in `compose.yaml`.
+
+## Capacity
+
+**Target: 50 concurrent users** — [ADR 0003](../docs/decisions/0003-capacity-target.md),
+which is mostly a list of what we are deciding not to build.
+
+| Component | Load at 50 users | Consequence |
+| --- | --- | --- |
+| FastAPI + SSE | 50 open streams | One async worker handles it. **No gunicorn, no worker tuning** — Cloud Run scales by instance, not by process |
+| Identity check | tens of microseconds | Never the bottleneck. Don't cache it |
+| Our DB queries | a few per turn | Pool of 10-20 per instance is ample |
+| **LLM provider** | ~5-25 req/s of multi-second calls | **The real ceiling.** A rate limit and a token budget, not our code |
+| **Ollama embeddings** | one instance, one call per memory op | **The local bottleneck from milestone 5.** Measure here first |
+
+- **Pool size from an env var with a small default.** `pool_size x instance_count` is the
+  number that matters, not `pool_size` — Cloud SQL's `max_connections` scales with instance
+  memory and a small tier is ~25 *total*.
+- **Don't add Redis, a cache or a queue** to solve a 50-user problem. Measure with the
+  Locust scenario (tracker V5) first; if the answer is Postgres, use Postgres.
+- Laptop load-test numbers are **relative, not absolute** — generator and server share CPU.
+  Use them to compare before and after a change.
 
 ## Portability (Cloud Run is the deployment target)
 
