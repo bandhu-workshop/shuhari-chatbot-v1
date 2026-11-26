@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 19:58 IST
+> **Last updated:** 2026-11-26 18:40 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -161,7 +161,7 @@ Flow: edit a table in `models/` (register it in `db/base.py`) → `just migratio
 | S2 | Tool output treated as untrusted; injection case per new tool | Milestone 4+ | todo |
 | S3 | `security.jsonl` must-pass at 100% | Milestone 4 | todo |
 | S4 | Secrets from Secret Manager, not `.env` | Deployment phase 3 | todo |
-| S5 | Agent cannot modify any `AGENTS.md` — `permissions.deny` for the file-writing tools plus a `PreToolUse` Bash hook for shell writes | 2026-11-26 | **done** — `.claude/settings.json` + `.claude/hooks/protect-agents-md.py`, 15-case test suite. Reads stay allowed |
+| S5 | Agent cannot modify any instruction file **without being asked first** — `permissions.ask` for the file-writing tools plus a `PreToolUse` Bash hook for shell writes | 2026-11-26 | **done** — `.claude/settings.json` + `.claude/hooks/protect-agents-md.py`. Started as `deny`; changed to `ask` the same day, because a deny cannot be satisfied even when the human wants the edit. 21-case suite in `just check`. Reads stay allowed |
 
 ### Verification
 
@@ -289,6 +289,6 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Stamp currency is enforced mechanically, not by a human checklist: a doc's content and its stamp must change together | [../scripts/docs_audit.py](../scripts/docs_audit.py) |
 | 2026-11-26 | With squash merges a commit trailer goes on one commit or in the PR body, never on every commit | [../AGENTS.md](../AGENTS.md#rules) |
 | 2026-11-26 | One workflow per area (Backend / Frontend / Images / PR / CodeQL), reversing the earlier one-workflow rule: the split costs nothing and names the thing that broke | [decisions/0004-verification-layers.md](decisions/0004-verification-layers.md) — Revision: workflow split |
-| 2026-11-26 | `AGENTS.md` files are human territory: the agent is denied write access by `.claude/settings.json` and a `PreToolUse` hook. Every other doc stays agent-editable. Candidate rules are staged in `localdev/AGENTS-delta.md` | [../.claude/settings.json](../.claude/settings.json) |
+| 2026-11-26 | Instruction files are human territory, gated not frozen: a write prompts for confirmation via `permissions.ask` plus a `PreToolUse` hook, and proceeds only on a yes. Every other doc stays agent-editable with no prompt. Candidate rules are still staged in `localdev/AGENTS-delta.md` | [../.claude/settings.json](../.claude/settings.json) |
 | 2026-11-26 | PR titles and bodies are short and pointwise (What / Why / Verified / Deferred, ≤ 15 lines). Reasoning longer than a line goes to an ADR, not the body | [../AGENTS.md](../AGENTS.md#writing-the-title-and-body) |
 | 2026-11-26 | Labels live in `.github/labels.yml` under version control, synced declaratively. `type:`/`priority:`/`status:`/`component:` stay out, each with a named trigger that would change that | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |

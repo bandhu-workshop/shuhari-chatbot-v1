@@ -75,8 +75,13 @@ fmt:
 docs-audit:
     python3 scripts/docs_audit.py
 
-# fast local check before every commit: docs + lint + unit tests
-check: docs-audit lint test
+# the guard on the human-owned instruction files: does it still prompt on writes and stay
+# quiet on reads? Its matching has misfired twice, both times refusing legitimate work
+test-hooks:
+    python3 .claude/hooks/test_protect_agents_md.py
+
+# fast local check before every commit: docs + hook guard + lint + unit tests
+check: docs-audit test-hooks lint test
 
 # everything CI runs: lint, unit, migrations check, integration, frontend build, docker builds
 check-all: check test-integration
