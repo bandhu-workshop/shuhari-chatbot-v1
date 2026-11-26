@@ -1,0 +1,78 @@
+name: shuhari
+
+# Default (`just up`): infra only. Run backend/frontend natively for hot reload.
+# Profile "app" (`just stack`): also builds and runs backend + frontend containers.
+# All ports bind to 127.0.0.1: reachable from this laptop only, not the network.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shuhari}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shuhari}
+      POSTGRES_DB: ${POSTGRES_DB:-shuhari}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./localdev/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shuhari}"]
+      interval: 5s
+      retries: 10
+
+  phoenix:
+    image: arizephoenix/phoenix:latest   # pin a version once things work
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+    ports:
+      - "127.0.0.1:6006:6006"   # UI + OTLP HTTP (/v1/traces)
+      - "127.0.0.1:4317:4317"   # OTLP gRPC
+    volumes:
+      - ./localdev/data/phoenix:/mnt/data
+
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - ./infra/searxng:/etc/searxng
+
+  ollama:
+    image: ollama/ollama:latest          # local embeddings for mem0 (`just models` pulls the model)
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ./localdev/data/ollama:/root/.ollama
+
+  backend:
+    profiles: ["app"]
+    build: ./backend
+    env_file: .env
+    environment:
+      # container-to-container addresses override the localhost ones in .env
+      POSTGRES_HOST: postgres
+      PHOENIX_COLLECTOR_ENDPOINT: http://phoenix:6006
+      SEARXNG_URL: http://searxng:8080
+      OLLAMA_URL: http://ollama:11434
+      MEM0_HISTORY_PATH: /data/mem0/history.db
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./localdev/data/mem0:/data/mem0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      phoenix:
+        condition: service_started
+      searxng:
+        condition: service_started
+      ollama:
+        condition: service_started
+
+  frontend:
+    profiles: ["app"]
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend

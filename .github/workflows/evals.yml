@@ -1,0 +1,73 @@
+# Real model calls cost money, so evals run on demand and weekly, not on every push.
+# Each dataset runs 3 times; the job fails if a dataset drops past its tolerance
+# vs evals/baseline.json, or if any must-pass case (security) fails.
+name: Evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "Dataset to run (or 'all')"
+        default: all
+  schedule:
+    - cron: "30 3 * * 1"   # Mondays 03:30 UTC (09:00 IST)
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    name: evals
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: shuhari
+          POSTGRES_PASSWORD: shuhari
+          POSTGRES_DB: shuhari
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shuhari"
+          --health-interval 5s
+          --health-retries 10
+      ollama:
+        image: ollama/ollama:latest
+        ports: ["11434:11434"]
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: shuhari
+      POSTGRES_PASSWORD: shuhari
+      POSTGRES_DB: shuhari
+      OLLAMA_URL: http://localhost:11434
+      EMBED_MODEL: nomic-embed-text
+      EMBED_DIMS: "768"
+      MEM0_HISTORY_PATH: /tmp/mem0/history.db
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # optional: only needed if a model variable below points to these providers
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      # repo variables override the cheap defaults
+      CHAT_MODEL: ${{ vars.CHAT_MODEL || 'openai/gpt-6-luna' }}
+      MEMORY_LLM_MODEL: ${{ vars.MEMORY_LLM_MODEL || 'openai/gpt-6-luna' }}
+      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL || 'openai/gpt-6-luna' }}
+      # No Phoenix in CI: evals/run.py skips trace export when PHOENIX_COLLECTOR_ENDPOINT is unset.
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Pull embedding model
+        run: docker exec ${{ job.services.ollama.id }} ollama pull nomic-embed-text
+      - run: uv run alembic upgrade head
+      - run: uv run python -m evals.run --dataset ${{ inputs.dataset || 'all' }} --repeats 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results-${{ github.run_number }}
+          path: backend/evals/results/
