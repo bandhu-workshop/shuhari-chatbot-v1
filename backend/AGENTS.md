@@ -1,6 +1,6 @@
 # backend
 
-> **Last updated:** 2026-11-26 13:01 IST
+> **Last updated:** 2026-11-26 13:31 IST
 
 Python 3.12, uv (`.venv` lives here, next to `pyproject.toml` and `uv.lock`). Google ADK for agents, FastAPI for the API.
 Run commands from the repo root with `just`, or from this folder with `uv run ...`.
@@ -76,10 +76,10 @@ Notes that don't fit in a one-liner:
   never depends on an API version.
 - **No `services/` layer yet.** It arrives at milestone 3, when session list/rename/delete
   needs a home that is neither a route nor agent code. Don't create it empty before then.
-- **Async runtime, sync Alembic.** Unlike `bandhu-workshop/creditforge`, this project
-  cannot be async-only: ADK needs asyncpg, Alembic needs a sync psycopg path, and mem0's
-  pgvector needs a plain URL. Three URLs from one source in `core/config.py`. This is
-  deliberate — don't "fix" it into a single async path.
+- **Async-only, one URL.** App code, Alembic and ADK all use the same
+  `postgresql+asyncpg://` string; mem0 alone takes discrete connection parameters because
+  it does not use SQLAlchemy. See [ADR 0002](../docs/decisions/0002-one-database-url.md).
+  Don't reintroduce a sync driver.
 - `tests/unit/test_package_structure.py` imports every layer package, so this layout is
   enforced rather than aspirational.
 
@@ -87,11 +87,14 @@ Notes that don't fit in a one-liner:
 - `core/config.py` is the only place that knows model ids, providers, keys and URLs. Agents, tools and memory read from `settings`; never hardcode a model name.
 - Models use the LiteLLM format `provider/model` (`CHAT_MODEL`, `MEMORY_LLM_MODEL`, `EVAL_JUDGE_MODEL`). Default for all three: `openai/gpt-6-luna`, OpenAI's cheapest model. Don't change the defaults to a costlier model.
 - ADK agents always get their model as `LiteLlm(model=settings.chat_model)`, so switching provider is a `.env` change, not a code change.
-- DB URLs are built from `POSTGRES_*` vars (one source):
-  - `app_db_url` → `postgresql+psycopg://…` (SQLModel, Alembic; sync)
-  - `adk_db_url` → `postgresql+asyncpg://…` (ADK `DatabaseSessionService` needs an async driver)
-  - `mem0_db_url` → `postgresql://…` (mem0 pgvector)
-- Dependencies: `google-adk[db]`, `litellm`, `asyncpg`, `psycopg[binary]`, `sqlmodel`, `alembic`, `mem0ai`. Pin `google-adk` and `mem0ai` to a minor version and upgrade on purpose (ADK has changed its session schema between versions).
+- **One database URL, async-only** (see [ADR 0002](../docs/decisions/0002-one-database-url.md)).
+  `POSTGRES_*` vars are the single source; `core/config.py` derives exactly one URL:
+  - `database_url` → `postgresql+asyncpg://…` — our app code, **Alembic**, and ADK. One string, three consumers.
+  - An explicit `DATABASE_URL` env var wins when set. That is the only DB override production needs.
+  - mem0 gets `postgres_host`, `postgres_port`, `postgres_user`, `postgres_password`, `postgres_db` as **discrete parameters** — no URL, no string parsing. Never build a URL and then take it apart.
+- `asyncpg` is the only Postgres driver we declare. Don't add `psycopg`; ADK requires async, so a second driver buys nothing. mem0's libpq binding is its own transitive dependency.
+- Alembic uses the **async template** (`alembic init -t async`). The `asyncio.run` / `run_sync` boilerplate in `env.py` is generated — leave it alone.
+- Dependencies: `google-adk[db]`, `litellm`, `asyncpg`, `sqlmodel`, `alembic`, `mem0ai`. Pin `google-adk` and `mem0ai` to a minor version and upgrade on purpose (ADK has changed its session schema between versions).
 
 ## Database ownership
 One Postgres, three owners. Never manage another owner's tables.
@@ -102,7 +105,7 @@ One Postgres, three owners. Never manage another owner's tables.
 | ADK sessions | ADK's session / event / state tables | ADK itself. On ADK upgrades read the release notes; use `adk migrate session` when ADK says the schema changed |
 | mem0 | the `mem0_memories` vector collection | mem0 itself |
 
-- `alembic/env.py`: `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.app_db_url`, and this filter so autogenerate never tries to drop ADK or mem0 tables:
+- `alembic/env.py`: `target_metadata` from `shuhari.db.base`, import `shuhari.models`, URL from `settings.database_url`, and this filter so autogenerate never tries to drop ADK or mem0 tables:
   ```python
   def include_object(obj, name, type_, reflected, compare_to):
       # Only manage tables defined in our SQLModel metadata.
@@ -130,7 +133,12 @@ MEM0_CONFIG = {
     },
     "vector_store": {
         "provider": "pgvector",
-        "config": {"connection_string": settings.mem0_db_url, "collection_name": "mem0_memories",
+        # Discrete params, not connection_string: better documented and version-stable.
+        # For Cloud SQL, postgres_host is the socket dir (/cloudsql/<instance>) — libpq
+        # treats a host starting with "/" as a Unix socket directory.
+        "config": {"host": settings.postgres_host, "port": settings.postgres_port,
+                   "user": settings.postgres_user, "password": settings.postgres_password,
+                   "dbname": settings.postgres_db, "collection_name": "mem0_memories",
                    "embedding_model_dims": settings.embed_dims},  # must equal the embedder's output size
     },
     "history_db_path": settings.mem0_history_path,
@@ -171,10 +179,11 @@ Decided in [docs/decisions/0001-deployment-strategy.md](../docs/decisions/0001-d
 Development is local-first; these rules are the things that are cheap now and expensive to
 retrofit. Follow them from milestone 1, even though nothing is deployed yet.
 
-- **Every DB URL is individually overridable.** `core/config.py` builds `app_db_url`, `adk_db_url`
-  and `mem0_db_url` from `POSTGRES_*`, but an explicit `APP_DB_URL` / `ADK_DB_URL` /
-  `MEM0_DB_URL` env var wins when set. Cloud SQL's default connection path is a unix socket
-  (`/cloudsql/<name>`), which does not fit host:port.
+- **One overridable database URL.** `core/config.py` derives `database_url` from
+  `POSTGRES_*`, and an explicit `DATABASE_URL` wins when set. Cloud SQL's default connection
+  path is a unix socket (`/cloudsql/<name>`), which does not fit host:port — hence the
+  override. mem0 needs no override: it takes `postgres_host` directly, and libpq accepts a
+  socket directory there.
 - **`.env` is optional.** pydantic-settings reads it when present; real env vars are
   authoritative and must be sufficient on their own. Never fail to start because `.env` is missing.
 - **Listen on `$PORT`**, defaulting to 8000. The Dockerfile `CMD` uses shell form so the

@@ -1,13 +1,13 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 13:17 IST
+> **Last updated:** 2026-11-26 13:31 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
 ## Read first
 - `README.md`: overview, commands, git flow
 - `docs/blueprint.md`: the plan (stack, milestones, bootstrap steps, file contents)
-- `docs/decisions/`: ADRs. `0001-deployment-strategy.md` sets the local-first/GCP-later phasing and the portability rules that milestones 1-3 must follow
+- `docs/decisions/`: ADRs — these override the blueprint. `0001` local-first/GCP-later phasing + portability rules; `0002` one async database URL
 - **`docs/tracker.md`: where we are and what's next. Read it first, update it last.**
 - `docs/github-workflow/repo-branch-protection.md`: branch protection, merge rules, commit conventions
 
@@ -57,6 +57,11 @@ PR it was given.
   that regenerates `api-types.ts`. Don't bundle them to save a round trip.
 - **Never `git add -A` when the working tree holds unrelated changes.** Stage by path,
   so a PR contains only what its message describes.
+- **`docs/blueprint.md` is a starting point, not the final word.** Improvise on top of it:
+  when something fits better than what it specifies, propose that instead, with the
+  reasoning. Then record the agreed decision as an ADR in `docs/decisions/` and update
+  every doc that contradicts it in the same PR — the blueprint included. The latest
+  agreed decision wins over the blueprint, always.
 
 ## Rules
 - Keep code simple and readable. No extra layers or new frameworks.
