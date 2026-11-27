@@ -1,6 +1,6 @@
 # shuhari-chatbot-v1
 
-> **Last updated:** 2026-11-26 19:20 IST
+> **Last updated:** 2026-11-27 10:21 IST
 
 Learning project: a Claude/ChatGPT-style chatbot built with Google ADK, one small working milestone at a time.
 
@@ -140,6 +140,8 @@ PR it was given.
   reasoning. Then record the agreed decision as an ADR in `docs/decisions/` and update
   every doc that contradicts it in the same PR — the blueprint included. The latest
   agreed decision wins over the blueprint, always.
+- **Match the step count to the work size** — see [Step size](#step-size) for when to break
+  work down and how to run the steps.
 
 ## Coding style
 
@@ -190,6 +192,18 @@ The output of `brainstorming` and `writing-plans` is saved into the feature fold
 Why this is a rule and not a preference: these skills carry exactly the steps that get
 skipped under momentum — writing the test first, verifying before claiming success, and
 not grading your own work.
+
+### Step size
+
+At the start of every task, judge its size. Break work into steps only when it has several
+real decision points or distinct areas needing attention (for example, schema, endpoint,
+and UI, or a consequential library choice); otherwise do it in one go and say so.
+
+For staged work, list logical, easy-to-picture steps in the feature folder under
+`localdev/features/`. Use plain language to say what each step delivers and how the user
+will see it working, not module names or jargon. Each step must end in a visible result;
+finish it and get the user's confirmation before starting the next. Track progress in
+`docs/tracker.md`.
 
 ## Pull requests
 
