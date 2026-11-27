@@ -1,6 +1,6 @@
 # Project tracker — big picture
 
-> **Last updated:** 2026-11-26 18:50 IST
+> **Last updated:** 2026-11-27 10:21 IST
 
 The single place that answers "where are we and what's next". Update it whenever a
 step, milestone or track row changes state — in the same PR that caused the change.
@@ -293,3 +293,4 @@ Governed by [decisions/0001-deployment-strategy.md](decisions/0001-deployment-st
 | 2026-11-26 | Instruction files are human territory, gated not frozen: a write prompts for confirmation via `permissions.ask` plus a `PreToolUse` hook, and proceeds only on a yes. Every other doc stays agent-editable with no prompt. Candidate rules are still staged in `localdev/AGENTS-delta.md` | [../.claude/settings.json](../.claude/settings.json) |
 | 2026-11-26 | PR titles and bodies are short and pointwise (What / Why / Verified / Deferred, ≤ 15 lines). Reasoning longer than a line goes to an ADR, not the body | [../AGENTS.md](../AGENTS.md#writing-the-title-and-body) |
 | 2026-11-26 | Labels live in `.github/labels.yml` under version control, synced declaratively. `type:`/`priority:`/`status:`/`component:` stay out, each with a named trigger that would change that | [github-workflow/repo-branch-protection.md](github-workflow/repo-branch-protection.md#labels) |
+| 2026-11-27 | Step sizing: break complex, multi-decision work into visible steps and confirm each before continuing; handle small work in one go | [../AGENTS.md](../AGENTS.md#step-size) |
